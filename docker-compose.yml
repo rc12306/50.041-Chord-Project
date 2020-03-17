@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 
 services:
   node-0:
@@ -13,3 +13,6 @@ services:
        - chord-network
      ports:
        - 8091:8091/udp
+
+networks:
+  chord-network:
