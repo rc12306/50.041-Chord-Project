@@ -15,4 +15,8 @@ Run the compose file:
 ```
 docker-compose up -d --scale node=5
 ```
-This creates 1 root node, and 5 other nodes. 
+This creates 1 root node, and 5 other nodes.
+To view all containers, run this command:
+```
+docker ps
+```
