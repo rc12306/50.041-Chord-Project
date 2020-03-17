@@ -11,12 +11,20 @@ sudo chmod +x /usr/local/bin/docker-compose
 *Installation instructions from [Docker Compose](https://docs.docker.com/compose/install/)*
 
 **Setting up nodes:**
+
 Run the compose file:
 ```
 docker-compose up -d --scale node=5
 ```
 This creates 1 root node, and 5 other nodes.
+
 To view all containers, run this command:
 ```
 docker ps
 ```
+
+To view the IP addresses of containers, run this command:
+```
+bash find_ip.sh
+```
+This also adds the IP addresses and the names of the corresponding containers to `ip.txt`.
