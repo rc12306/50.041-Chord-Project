@@ -17,7 +17,6 @@ func main() {
 	nodeI := chord.CreateNodeAndJoin(51, nodeH)
 	nodeJ := chord.CreateNodeAndJoin(56, nodeB)
 	fmt.Println(nodeE, nodeG, nodeI, nodeJ)
-
 	var input string
 	fmt.Scanln(&input)
 }

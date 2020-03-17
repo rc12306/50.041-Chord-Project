@@ -23,19 +23,21 @@ type Node struct {
 // create new Chord ring
 func (node *Node) create() error {
 	node.predecessor = nil
-	node.successorList = []*Node{node}
+	node.successorList = make([]*Node, keySize)
+	node.successorList[0] = node
 	node.hashTable = make(map[string]string)
 	return nil
 }
 
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *Node) error {
-	node.predecessor = nil
+	// node.predecessor = nil
 	successor, err := remoteNode.findSuccessor(node.identifier)
 	if err != nil {
 		return err
 	}
-	node.successorList = []*Node{successor}
+	node.successorList = make([]*Node, keySize)
+	node.successorList[0] = successor
 	node.hashTable = make(map[string]string)
 	node.updateSuccessorList(0)
 	return nil
@@ -62,12 +64,21 @@ func (node *Node) stabilise() {
 			replaces it with the first live entry in its successor list
 			reconciles successor list with new successor
 	*/
-	x := node.successorList[0].predecessor
-	if x != nil && Between(x.identifier, node.identifier, node.successorList[0].identifier) {
-		node.successorList[0] = x
+	ticker := time.NewTicker(fingerTableUpdateRate)
+	for {
+		select {
+		case <-ticker.C:
+			x := node.successorList[0].predecessor
+			if x != nil && Between(x.identifier, node.identifier, node.successorList[0].identifier) {
+				node.successorList[0] = x
+			}
+			node.successorList[0].notify(node)
+			node.updateSuccessorList(0)
+		case <-node.stop:
+			ticker.Stop()
+			return
+		}
 	}
-	node.successorList[0].notify(node)
-	node.updateSuccessorList(0)
 }
 
 func (node *Node) noReply() bool {
@@ -78,13 +89,13 @@ func (node *Node) noReply() bool {
 // allows new nodes to initialise their finger tables and existing nodes to incorporate new nodes into their finger tables
 func (node *Node) fixFingers() {
 	// initialisation of finger table can be improved
-	node.fingerTable = make([]*Node, 0)
+	node.fingerTable = make([]*Node, keySize)
 	next := 0
 	ticker := time.NewTicker(fingerTableUpdateRate)
 	for {
 		select {
 		case <-ticker.C:
-			//updateFinger
+			// updateFinger
 			nextNode := 2 ^ (next - 1)
 			node.fingerTable[next], _ = node.findSuccessor((node.identifier + nextNode) % keySize)
 			next = (next + 1) % keySize
@@ -104,7 +115,7 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor.noReply() {
+			if node.predecessor != nil && node.predecessor.noReply() {
 				node.predecessor = nil
 			}
 		case <-node.stop:
@@ -123,6 +134,9 @@ func (node *Node) findSuccessor(id int) (*Node, error) {
 	}
 	// get closest preceding node to id in the finger table of this node
 	n, _ := node.findPredecessor(id)
+	if n == node {
+		return node, nil
+	}
 	return n.findSuccessor(id)
 
 	/*
@@ -139,14 +153,15 @@ func (node *Node) findPredecessor(id int) (*Node, error) {
 	closestPred := node
 	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
-		if Between(fingerEntry.identifier, node.identifier, id) {
+		if fingerEntry != nil && Between(fingerEntry.identifier, node.identifier, id) {
 			closestPred = fingerEntry
 			break
 		}
 	}
-	for i := len(node.fingerTable); i >= 0; i-- {
+	for i := len(node.successorList) - 1; i >= 0; i-- {
 		successorListEntry := node.successorList[i]
-		if successorListEntry.identifier > closestPred.identifier &&
+		if successorListEntry != nil &&
+			successorListEntry.identifier > closestPred.identifier &&
 			Between(successorListEntry.identifier, node.identifier, id) {
 			closestPred = successorListEntry
 			break
@@ -164,12 +179,14 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
-		copyList := make([]*Node, keySize)
-		copy(copyList[1:], node.successorList[firstLiveSuccessor].successorList[:keySize])
+		newSuccessorList := node.successorList[firstLiveSuccessor].successorList
+		copyList := make([]*Node, len(newSuccessorList))
+		if len(newSuccessorList) > 1 {
+			copy(copyList[1:], newSuccessorList)
+		}
 		copyList[0] = node.successorList[firstLiveSuccessor]
 		node.successorList = copyList
 	}
-
 }
 
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
