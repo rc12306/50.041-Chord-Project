@@ -1,5 +1,15 @@
 version: '2'
 
 services:
-  nodes:
+  node-0:
     image: chord
+    networks:
+      - chord-network
+    ports:
+      - 8090:8090/udp
+  nodes:
+     image: chord
+     networks:
+       - chord-network
+     ports:
+       - 8091:8091/udp
