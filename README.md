@@ -11,6 +11,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 *Installation instructions from [Docker Compose](https://docs.docker.com/compose/install/)*
 
 **Setting up nodes:**
+
 Run these commands:
 ```
 docker build .
