@@ -15,4 +15,4 @@ Run the compose file:
 ```
 docker-compose up -d --scale node=5
 ```
-This create 1 root node, and 5 other nodes. 
+This creates 1 root node, and 5 other nodes. 
