@@ -13,5 +13,6 @@ sudo chmod +x /usr/local/bin/docker-compose
 **Setting up nodes:**
 Run the compose file:
 ```
-docker-compose up -d
+docker-compose up -d --scale node=5
 ```
+This create 1 root node, and 5 other nodes. 
