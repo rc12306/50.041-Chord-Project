@@ -12,6 +12,10 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 **Setting up nodes:**
 Run these commands:
-```docker build .```
-```docker-compose up -d```
+```
+docker build .
+```
+```
+docker-compose up -d
+```
 This builds the image, then sets up a root node to communicate with the client and 1 other node.
