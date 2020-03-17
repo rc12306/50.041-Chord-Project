@@ -11,12 +11,11 @@ sudo chmod +x /usr/local/bin/docker-compose
 *Installation instructions from [Docker Compose](https://docs.docker.com/compose/install/)*
 
 **Setting up nodes:**
-
-Run these commands:
+1. Build the image:
 ```
 docker build .
 ```
+2. Run the compose file:
 ```
 docker-compose up -d
 ```
-This builds the image, then sets up a root node to communicate with the client and 1 other node.
