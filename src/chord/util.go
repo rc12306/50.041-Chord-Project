@@ -1,21 +1,21 @@
-package main
+package chord
 
 import (
 	"crypto/sha1"
 	"encoding/binary"
 )
 
-// Between checks if identifier of nodeX is in range (a, b)
+// Between checks if identifier is in range (a, b)
 func Between(nodeX, nodeA, nodeB int) bool {
 	return false
 }
 
-// BetweenRightIncl checks if identifier of nodeX is in range (a, b]
+// BetweenRightIncl checks if identifier is in range (a, b]
 func BetweenRightIncl(nodeX, nodeA, nodeB int) bool {
 	return false
 }
 
-// BetweenLeftIncl checks if identifier of nodeX is in range [a, b)
+// BetweenLeftIncl checks if identifier is in range [a, b)
 func BetweenLeftIncl(nodeX, nodeA, nodeB int) bool {
 	return false
 }

@@ -1,12 +1,13 @@
-package main
+package chord
 
 import "errors"
 
 // structure not developed yet: look at grpc or golang's native net/rpc??
+// methods that are available for remote access must be of the form "func (t *T) MethodName(argType T1, replyType *T2) error"
 
 // GetSuccessorID gets id of sucessor of remote node through RPC?
-func (node *Node) GetSuccessorID(id []byte) ([]byte, error) {
-	return make([]byte, 0), errors.New("Unimplemented function SetSuccessorID()")
+func (node *Node) GetSuccessorID(id []byte, sucessorID []byte) error {
+	return errors.New("Unimplemented function SetSuccessorID()")
 
 }
 

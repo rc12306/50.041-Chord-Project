@@ -1,4 +1,4 @@
-package main
+package chord
 
 import (
 	"fmt"
@@ -17,13 +17,14 @@ type Node struct {
 	successorList []*Node
 	stop          chan bool
 	fail          bool
-	hashTable     map[int]string
+	hashTable     map[string]string
 }
 
 // create new Chord ring
 func (node *Node) create() error {
 	node.predecessor = nil
 	node.successorList = []*Node{node}
+	node.hashTable = make(map[string]string)
 	return nil
 }
 
@@ -35,6 +36,7 @@ func (node *Node) join(remoteNode *Node) error {
 		return err
 	}
 	node.successorList = []*Node{successor}
+	node.hashTable = make(map[string]string)
 	node.updateSuccessorList(0)
 	return nil
 }
@@ -118,11 +120,11 @@ func (node *Node) checkPredecessor() {
 func (node *Node) findSuccessor(id int) (*Node, error) {
 	if BetweenRightIncl(id, node.identifier, node.successorList[0].identifier) {
 		return node.successorList[0], nil
-	} else {
-		// get closest preceding node to id in the finger table of this node
-		n, _ := node.findPredecessor(id)
-		return n.findSuccessor(id)
 	}
+	// get closest preceding node to id in the finger table of this node
+	n, _ := node.findPredecessor(id)
+	return n.findSuccessor(id)
+
 	/*
 		if a node fails during the find successor procedure:
 			after timeout, lookup proceeds by trying next best predecessor among nodes in the finger table and successor list
@@ -135,14 +137,14 @@ func (node *Node) findPredecessor(id int) (*Node, error) {
 		searches finger table (and successor list) for most immediate predecessor of id
 	*/
 	closestPred := node
-	for i := keySize - 1; i >= 0; i-- {
+	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
 		if Between(fingerEntry.identifier, node.identifier, id) {
 			closestPred = fingerEntry
 			break
 		}
 	}
-	for i := keySize - 1; i >= 0; i-- {
+	for i := len(node.fingerTable); i >= 0; i-- {
 		successorListEntry := node.successorList[i]
 		if successorListEntry.identifier > closestPred.identifier &&
 			Between(successorListEntry.identifier, node.identifier, id) {
@@ -170,13 +172,18 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 
 }
 
-func createNode(identifier int) {
+// CreateNodeAndJoin helps initialise nodes and add them to the network for testing
+func CreateNodeAndJoin(identifier int, joinNode *Node) (newNode *Node) {
 	node := Node{
 		identifier: identifier,
-		hashTable:  map[int]string{5: "world"},
 	}
-}
-
-func main() {
-
+	if joinNode == nil {
+		node.create()
+	} else {
+		node.join(joinNode)
+	}
+	go node.stabilise()
+	go node.fixFingers()
+	go node.checkPredecessor()
+	return &node
 }
