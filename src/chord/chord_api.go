@@ -1,8 +1,8 @@
 package chord
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"log"
 	// need both net and net/rpc because node acts as sender and receiver
 	"net"
@@ -18,9 +18,9 @@ import (
 	clientIP:	client port
 */
 type Packet struct {
-	packetType 	string 
-	msg 		int
-	senderIP 	string
+	packetType string
+	msg        int
+	senderIP   string
 	// senderPort 	string
 }
 
@@ -30,9 +30,9 @@ type Listener int
 	Handles the receival of message
 	Different action for different packet type
 */
-func (l *Listener) Receive(payload *Packet, reply *Packet) error{
+func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	// Check what packet type it is
-	switch packetType := payload.packetType; packetType{
+	switch packetType := payload.packetType; packetType {
 	case "ping":
 		fmt.Println("Receive ping from " + payload.senderIP)
 		// reply to ping
@@ -46,7 +46,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error{
 	case "query":
 		// call node file to do the search
 		node := query(payload.msg)
-		*reply = Packet{"answer",node,""}
+		*reply = Packet{"answer", node, ""}
 		return nil
 	case "answer":
 		fmt.Printf("File is in node %d", payload.msg)
@@ -66,16 +66,16 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error{
 		senderIP: 	sender IP (will it be given in node.go?)
 		receiverIP:	receiver IP (must be given by node.go)
 */
-func ping(senderIP string, receiverIP string){
+func ping(senderIP string, receiverIP string) {
 	// try to handshake with other node
-	client, err := rpc.Dial("tcp", receiverIP + ":1234")
+	client, err := rpc.Dial("tcp", receiverIP+":1234")
 	if err != nil {
 		// if handshake failed then the node is not even alive
 		log.Fatal("Dialing:", err)
 	}
 
 	// Set up arguments
-	payload := &Packet{"ping",0,senderIP}
+	payload := &Packet{"ping", 0, senderIP}
 	var reply Packet
 
 	// and make an rpc call
@@ -91,7 +91,7 @@ func ping(senderIP string, receiverIP string){
 /*
 	TCP guarentees a reply so pong has not been implemented
 */
-func pong(){
+func pong() {
 
 }
 
@@ -107,10 +107,10 @@ func query(id int) int {
 	return closestPred.identifier
 }
 
-func handleQuery(id int, closestPredIP string) int{
+func handleQuery(id int, closestPredIP string) int {
 	// query closest predecessor
 	// get closestPred IP
-	client, err := rpc.Dial("tcp", closestPredIP + ":1234")
+	client, err := rpc.Dial("tcp", closestPredIP+":1234")
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
@@ -133,7 +133,7 @@ func handleQuery(id int, closestPredIP string) int{
 	have not implemented answer function because it is a recursive query
 	and tcp ensures a reply
 */
-func answer(){
+func answer() {
 
 }
 
@@ -146,7 +146,7 @@ func main() {
 
 	fmt.Println("IP address: ")
 	inbound, err := net.ListenTCP("tcp", addy)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}

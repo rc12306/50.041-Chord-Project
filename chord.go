@@ -10,8 +10,8 @@ import (
 	"net" //GetOutboundIP()
 	"os"
 	//"time"
-	//"reflect" //testing
 	"bytes" //ip2Long()
+	//"reflect" //testing
 	"strings"
 )
 
@@ -62,7 +62,11 @@ func main() {
 	IP_str := GetOutboundIP().String()
 	IP_int := ip2int(IP)
 	ID := hash(fmt.Sprint(IP_int))
-	//fmt.Println(reflect.TypeOf(hash(IP_string)).String())
+
+	var newNode chord.Node = chord.Node{
+		Identifier: -1,
+	}
+	node := &newNode
 
 	// Intro Message
 	fmt.Println(
@@ -71,6 +75,7 @@ func main() {
 		
 		Create 	c     		: Create a new chord network.
 		Join	j <id>		: Join the chord network by specifying id.
+		Print	p      		: Print node info.
 		Leave 	l     		: Leave the current chord network.
 		Find	f <fname>	: Find a file
 		
@@ -79,7 +84,6 @@ func main() {
 	fmt.Print(">>>")
 
 	for {
-		// input := ""
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		input := scanner.Text()
@@ -88,26 +92,34 @@ func main() {
 			os.Exit(1)
 		}
 
-		// var input string
-		// fmt.Scanln(&input)
-		// fmt.Println(input)
-
 		inputs := strings.Split(input, " ")
 
 		if inputs[0] != "" {
 			switch inputs[0] {
-			case "c":
 
-				node := chord.CreateNodeAndJoin(ID, nil)
+			// CREATE A NODE
+			case "c":
+				node = chord.CreateNodeAndJoin(ID, nil)
 				node.PrintNode()
 
 				message := "Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "."
 				fmt.Print(message + "\n>>>")
+				// Step 1: Wait for connections.
 
-				// CODE for networking
+			// PRINT NODE DATA
+			case "p":
+				if node.Identifier == -1 {
+					fmt.Println("Invalid node.")
+					fmt.Print("\n>>>")
+					break
+				}
 
+				node.PrintNode()
+				fmt.Print("\n>>>")
+				// (Still waiting for connection.)
+
+			// JOIN A NETWORK
 			case "j":
-
 				if len(inputs) <= 1 {
 					fmt.Print("Missing Variable(s)" + "\n>>>")
 					break
@@ -119,16 +131,34 @@ func main() {
 				//node := chord.CreateNodeAndJoin(ID, remoteNode_ID) //Don't know the node. Only knows IP
 				//node.PrintNode()
 
+				// Step 1: Request for successor from remoteNode. | Receive successor IP.
+				// Step 2: Request for successor list from successor IP. | Receive successor list and predecessor.
+				// Step 3: Process own information (successor list and predecessor).
+
 				message := "Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". "
 				message2 := "remoteNode is " + fmt.Sprint(remoteNode_ID) + "."
 				fmt.Print(message + message2 + "\n>>>")
+				// Step 4: Wait for connections.
 
+			// LEAVE A NETWORK
 			case "l":
+				if node.Identifier == -1 {
+					fmt.Println("Invalid node.")
+					fmt.Print("\n>>>")
+					break
+				}
 
+				node = &newNode
 				message := "Left chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "."
 				fmt.Print(message + "\n>>>")
 
+			// FIND A FILE BY FILENAME
 			case "f":
+				if node.Identifier == -1 {
+					fmt.Println("Invalid node.")
+					fmt.Print("\n>>>")
+					break
+				}
 
 				if len(inputs) <= 1 {
 					fmt.Print("Missing Variable(s)" + "\n>>>")
@@ -141,7 +171,12 @@ func main() {
 
 				filename := strings.Join(inputs, " ")
 				filename_hash := fmt.Sprint(hash(filename))
-				fmt.Print("	" + filename + " (" + filename_hash + ")\n>>>")
+				fmt.Print("	" + filename + " (" + filename_hash + ")")
+
+				// Step 1: Check own hash table.
+				// Step 2: Forward query. | Obtain query.
+				// (Still waiting for connection.)
+				fmt.Print("\n>>>")
 
 			default:
 				message := "Invalid input."
@@ -151,39 +186,4 @@ func main() {
 			fmt.Print(">>>")
 		}
 	}
-	// nodeA := chord.CreateNodeAndJoin(1, nil)
-	// nodeB := chord.CreateNodeAndJoin(8, nodeA)
-	// nodeC := chord.CreateNodeAndJoin(14, nodeA)
-	// nodeD := chord.CreateNodeAndJoin(21, nodeB)
-	// nodeE := chord.CreateNodeAndJoin(32, nodeD)
-	// nodeF := chord.CreateNodeAndJoin(38, nodeD)
-	// nodeG := chord.CreateNodeAndJoin(42, nodeC)
-	// nodeH := chord.CreateNodeAndJoin(48, nodeF)
-	// nodeI := chord.CreateNodeAndJoin(51, nodeH)
-	// nodeJ := chord.CreateNodeAndJoin(56, nodeB)
-	// time.Sleep(time.Second * 5)
-	// nodeA.PrintNode()
-	// nodeB.PrintNode()
-	// nodeC.PrintNode()
-	// nodeD.PrintNode()
-	// nodeE.PrintNode()
-	// nodeF.PrintNode()
-	// nodeG.PrintNode()
-	// nodeH.PrintNode()
-	// nodeI.PrintNode()
-	// nodeJ.PrintNode()
-
-	// fmt.Println("\nPutting key 'hello' with value 'world' into distributed table...")
-	// ans := chord.Hash("hello")
-	// fmt.Println("Hashed key 'hello' has identifier", ans)
-	// successor, _ := nodeA.FindSuccessor(ans)
-	// successor.Put("hello", "world")
-	// fmt.Println("Key 'hello' with value 'world' has been saved into Node", successor.Identifier)
-	// // successor.PrintNode()
-	// fmt.Println("Getting value of key 'hello'...")
-	// nodeOfKey, _ := nodeA.FindSuccessor(ans)
-	// value, _ := nodeOfKey.Get("hello")
-	// fmt.Println("Value of key 'hello' is '" + value + "'")
-	// var input string
-	// fmt.Scanln(&input)
 }
