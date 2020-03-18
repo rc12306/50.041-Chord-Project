@@ -35,4 +35,3 @@ To view the IP addresses of containers, run this command:
 ```
 docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
 ```
-This also adds the IP addresses and the names of the corresponding containers to `ip.txt`.
