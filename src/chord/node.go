@@ -3,7 +3,6 @@ package chord
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"time"
 )
 
@@ -214,36 +213,4 @@ func CreateNodeAndJoin(identifier int, joinNode *Node) (newNode *Node) {
 	go node.fixFingers()
 	go node.checkPredecessor()
 	return &node
-}
-
-// PrintNode prints the node info in a formatted way
-func (node *Node) PrintNode() {
-	print := "=========================================================\n"
-	print += "Identifier: " + strconv.Itoa(node.identifier) + "\n"
-	if node.predecessor == nil {
-		print += "Predecessor: nil \n"
-	} else {
-		print += "Predecessor: " + strconv.Itoa(node.predecessor.identifier) + "\n"
-	}
-	print += "Successor: " + strconv.Itoa(node.successorList[0].identifier) + "\n"
-	print += "Successor List: "
-	for _, successor := range node.successorList {
-		if successor != nil {
-			print += strconv.Itoa(successor.identifier) + ", "
-		}
-	}
-	print += "\nFinger Table: "
-	for _, finger := range node.fingerTable {
-		if finger != nil {
-			print += strconv.Itoa(finger.identifier) + ", "
-		}
-	}
-	print += "\nHash Table:\n"
-	for key, value := range node.hashTable {
-		keyIdentifier := hash(key)
-		print += "\t" + key + " (" + strconv.Itoa(keyIdentifier) + "): " + value + "\n"
-	}
-	print += "\n========================================================="
-
-	fmt.Println(print)
 }
