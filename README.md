@@ -12,6 +12,14 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 **Setting up nodes:**
 
+I don't know what these are for but you need these:
+```
+docker-compose pull
+```
+```
+docker-compose build
+```
+
 Run the compose file:
 ```
 docker-compose up -d --scale node=5
@@ -25,6 +33,6 @@ docker ps
 
 To view the IP addresses of containers, run this command:
 ```
-bash find_ip.sh
+docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
 ```
 This also adds the IP addresses and the names of the corresponding containers to `ip.txt`.
