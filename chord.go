@@ -28,6 +28,18 @@ func main() {
 	nodeH.PrintNode()
 	nodeI.PrintNode()
 	nodeJ.PrintNode()
+
+	fmt.Println("\nPutting key 'hello' with value 'world' into distributed table...")
+	ans := chord.Hash("hello")
+	fmt.Println("Hashed key 'hello' has identifier", ans)
+	successor, _ := nodeA.FindSuccessor(ans)
+	successor.Put("hello", "world")
+	fmt.Println("Key 'hello' with value 'world' has been saved into Node", successor.Identifier)
+	// successor.PrintNode()
+	fmt.Println("Getting value of key 'hello'...")
+	nodeOfKey, _ := nodeA.FindSuccessor(ans)
+	value, _ := nodeOfKey.Get("hello")
+	fmt.Println("Value of key 'hello' is '" + value + "'")
 	var input string
 	fmt.Scanln(&input)
 }
