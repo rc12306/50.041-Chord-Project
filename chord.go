@@ -150,7 +150,7 @@ func main() {
 			fmt.Print(">>>")
 		}
 	}
-	nodeA := chord.CreateNodeAndJoin(1, nil)
+	// nodeA := chord.CreateNodeAndJoin(1, nil)
 	// nodeB := chord.CreateNodeAndJoin(8, nodeA)
 	// nodeC := chord.CreateNodeAndJoin(14, nodeA)
 	// nodeD := chord.CreateNodeAndJoin(21, nodeB)

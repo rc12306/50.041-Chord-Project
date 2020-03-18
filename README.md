@@ -1,4 +1,8 @@
 # Chord Implementation on Docker
+
+**Command Line Interface**
+![](./CLI.PNG)
+
 **Installing Docker Compose (Linux):**
 1. Run this command to download Docker Compose:
 ```
@@ -28,3 +32,5 @@ To view the IP addresses of containers, run this command:
 bash find_ip.sh
 ```
 This also adds the IP addresses and the names of the corresponding containers to `ip.txt`.
+
+
