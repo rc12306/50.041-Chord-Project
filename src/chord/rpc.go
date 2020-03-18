@@ -1,7 +1,5 @@
 package chord
 
-import "errors"
-
 // structure not developed yet: look at grpc or golang's native net/rpc??
 // methods that are available for remote access must be of the form "func (t *T) MethodName(argType T1, replyType *T2) error"
 
@@ -11,38 +9,40 @@ type RemoteNode struct {
 	IP         string
 }
 
-// GetSuccessorList gets successor list of remote node through RPC
-func (remoteNode *RemoteNode) GetSuccessorList() []*RemoteNode {
-	return make([]*RemoteNode, 0)
+// GetSuccessorListRPC gets successor list of remote node through RPC
+func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
+	return ChordNode.QuerySuccessorList(remoteNode.IP)
 }
 
-// GetPredecessor gets predecessor of remote node through RPC
-func (remoteNode *RemoteNode) GetPredecessor() *RemoteNode {
-	return &RemoteNode{}
+// GetPredecessorRPC gets predecessor of remote node through RPC
+func (remoteNode *RemoteNode) GetPredecessorRPC() *RemoteNode {
+	return ChordNode.QueryPredecessor(remoteNode.IP)[0]
 }
 
-// FindSuccessor finds sucessor of id of remote node through RPC?
-func (remoteNode *RemoteNode) FindSuccessor(id int) *RemoteNode {
+// FindSuccessorRPC finds sucessor of id of remote node through RPC
+func (remoteNode *RemoteNode) FindSuccessorRPC(id int) *RemoteNode {
 	// connect to remote node and ask it to run findsuccessor()
-	return &RemoteNode{}
+	return ChordNode.Query(id, remoteNode.IP)
 }
 
-// Notify notifies remote node that portential thinks it may be the new predecessor of it through RPC?
-func (remoteNode *RemoteNode) Notify(potential *RemoteNode) error {
-	return errors.New("Unimplemented function Notify()")
+// NotifyRPC notifies remote node that portential thinks it may be the new predecessor of it through RPC?
+func (remoteNode *RemoteNode) NotifyRPC(potential *RemoteNode) {
+	ChordNode.Notify(remoteNode.IP, potential)
 }
 
-// NoReply checks if remoteNode is alive
-func (remoteNode *RemoteNode) NoReply() bool {
-	return false
+// NoReplyRPC checks if remoteNode is alive
+func (remoteNode *RemoteNode) NoReplyRPC() bool {
+	return ChordNode.Ping(remoteNode.IP)
 }
 
-// Get file using hashed file name as key from remote node
-func (remoteNode *RemoteNode) Get(key string) string {
-	return ""
+// GetRPC gets file using hashed file name as key from remote node
+func (remoteNode *RemoteNode) GetRPC(key string) string {
+	return queryValue(remoteNode.IP, key)
 }
 
-// Put key-value pair into remote node's hash table through RPC
-func (remoteNode *RemoteNode) Put(key, value string) error {
-	return errors.New("Unimplemented function Put()")
+// PutRPC puts key-value pair into remote node's hash table through RPC
+func (remoteNode *RemoteNode) PutRPC(key, value string) error {
+	putKeyValue(remoteNode.IP, key, value)
+	// TODO: implement error handling
+	return nil
 }

@@ -30,7 +30,7 @@ func (node *Node) TransferKeys(targetNode *RemoteNode, start int, end int) error
 	for key, value := range node.hashTable {
 		keyIdentifier := Hash(key)
 		if BetweenLeftIncl(keyIdentifier, start, end) {
-			err := targetNode.Put(key, value)
+			err := targetNode.PutRPC(key, value)
 			if err != nil {
 				node.delete(key)
 			} else {
