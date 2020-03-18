@@ -79,7 +79,8 @@ func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
 func networkIP() (string, []string) {
 	fmt.Println("Searching for IP of nodes in network ... ...")
 
-	myIP := GetOutboundIP() + "/24"
+	basicIP := GetOutboundIP()
+	myIP := basicIP + "/24"
 	fmt.Println(myIP)
 	hosts, _ := Hosts(myIP)
 	concurrentMax := 100
@@ -103,12 +104,14 @@ func networkIP() (string, []string) {
 	var ipSlice []string
 
 	for _, addr := range alives {
-		ipSlice = append(ipSlice, addr.Ip)
+		if addr.Ip != basicIP {
+			ipSlice = append(ipSlice, addr.Ip)
+		}
 	}
 
 	fmt.Println("Search completed!")
 
-	return ipSlice[0], ipSlice
+	return basicIP, ipSlice
 }
 
 func main() {
