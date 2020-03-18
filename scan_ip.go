@@ -115,7 +115,7 @@ func networkIP() (string, []string) {
 }
 
 func main() {
-	joinip, ipslice := networkIP()
-	fmt.Println("\n", joinip)
-	fmt.Println(ipslice, "\n")
+	myip, ipslice := networkIP()
+	fmt.Println("\n My IP addr: ", myip)
+	fmt.Println("Other IP in network: ", ipslice, "\n")
 }
