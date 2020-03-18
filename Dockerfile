@@ -11,4 +11,3 @@ ADD . .
 # Added nano to edit files on docker
 RUN apt-get update
 RUN apt-get install nano -y
-RUN go get -u golang.org/x/sync
