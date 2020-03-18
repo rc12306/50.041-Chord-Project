@@ -3,6 +3,7 @@ package chord
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	// "errors"
 	"log"
@@ -11,6 +12,7 @@ import (
 	// "time"
 )
 
+// ChordNode is the node calling the node.go functions
 var ChordNode *Node
 
 /*
@@ -89,6 +91,16 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		// Call node to make changes if necessory
 		handleQueryNotify(payload.List[0])
 		return nil
+	case "getValue":
+		// Call node to get value from hashtable
+		value := handleQueryValue(payload.Msg)
+		*reply = Packet{"Value", value, []*RemoteNode{}, ChordNode.IP}
+		return nil
+	case "putKeyValue":
+		// Call node to get value from hashtable
+		msg := strings.Split(payload.Msg, "VALUE:")
+		handlePutKeyValue(msg[0], msg[1])
+		return nil
 	default:
 		return nil
 	}
@@ -142,7 +154,7 @@ func pong() {
 	Args:
 		id:	hash of filename (key for lookup) OR
 			hash of IP
-	return id of node who holds the file
+	return id and ip of node who holds the file
 */
 func (node *Node) Query(id int, closestPredIP string) *RemoteNode {
 	// query closest predecessor
@@ -250,16 +262,17 @@ func handleQueryPredecessor() *RemoteNode {
 	Use by node
 	Args:
 		receiverIP:	IP of node you want to notify
+		potentialPred: node that might be the pred of node with receiverIP
 */
-func (node *Node) Notify(receiverIP string) {
+func (node *Node) Notify(receiverIP string, potentialPred *RemoteNode) {
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
 
 	// set up arguments
-	remoteNode := RemoteNode{ChordNode.Identifier, ChordNode.IP}
-	payload := &Packet{"notify", "I am our predecessor.", []*RemoteNode{&remoteNode}, ChordNode.IP}
+	// remoteNode := RemoteNode{ChordNode.Identifier, ChordNode.IP}
+	payload := &Packet{"notify", "I am our predecessor.", []*RemoteNode{potentialPred}, ChordNode.IP}
 	var reply Packet
 
 	// and make an rpc call
@@ -272,7 +285,62 @@ func (node *Node) Notify(receiverIP string) {
 	return
 }
 
-func handleQueryNotify(sender *RemoteNode) {
+func handleQueryNotify(potentialPred *RemoteNode) {
 	// Call node to make changes
-	ChordNode.notify(sender)
+	ChordNode.notify(potentialPred)
+}
+
+func queryValue(receiverIP string, key string) string {
+
+	client, err := rpc.Dial("tcp", receiverIP+":8081")
+	if err != nil {
+		log.Fatal("Dialing:", err)
+	}
+
+	// set up arguments
+	payload := &Packet{"getValue", key, nil, ChordNode.IP}
+	var reply Packet
+
+	// and make an rpc call
+	err = client.Call("Listener.Receive", payload, &reply)
+	if err != nil {
+		log.Fatal("Connection error:", err)
+	}
+	return reply.Msg
+}
+
+func handleQueryValue(key string) string {
+	// Call node to make changes
+	value, err := ChordNode.get(key)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return value
+}
+
+func putKeyValue(receiverIP string, key, value string) string {
+
+	client, err := rpc.Dial("tcp", receiverIP+":8081")
+	if err != nil {
+		log.Fatal("Dialing:", err)
+	}
+
+	// set up arguments
+	payload := &Packet{"putKeyValue", key + "VALUE:" + value, nil, ChordNode.IP}
+	var reply Packet
+
+	// and make an rpc call
+	err = client.Call("Listener.Receive", payload, &reply)
+	if err != nil {
+		log.Fatal("Connection error:", err)
+	}
+	return reply.Msg
+}
+
+func handlePutKeyValue(key, value string) {
+	// Call node to make changes
+	err := ChordNode.put(key, value)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
