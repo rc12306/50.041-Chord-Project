@@ -12,8 +12,11 @@ import (
 	//"time"
 	"bytes" //ip2Long()
 	//"reflect" //testing
+	"net/rpc"
 	"strings"
 )
+
+var LISTENING_PORT int = 8081
 
 /* --------------------------------DEPENDENCIES-----------------------*/
 
@@ -53,6 +56,36 @@ func hash(key string) int {
 	return int(binary.BigEndian.Uint64(result))
 }
 
+// LISTEN
+func node_listen(port int, quit_listen chan bool) {
+
+	for {
+		select {
+		case <-quit_listen:
+			return
+		default:
+
+			addy, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+fmt.Sprint(port))
+			if err != nil {
+				log.Fatal(err)
+			}
+			fmt.Println("IP address: ")
+			inbound, err := net.ListenTCP("tcp", addy)
+
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			listener := new(chord.Listener)
+			rpc.Register(listener)
+			rpc.Accept(inbound)
+			fmt.Println("Accepted")
+
+		}
+	}
+
+}
+
 /* --------------------------------DEPENDENCIES-----------------------*/
 
 func main() {
@@ -83,6 +116,8 @@ func main() {
 
 	fmt.Print(">>>")
 
+	quit_listen := make(chan bool)
+
 	// Main CLI
 	for {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -97,10 +132,17 @@ func main() {
 			switch inputs[0] {
 
 			case "c": // CREATE A NODE
-				node = chord.CreateNodeAndJoin(ID, nil)
+
+				if node.Identifier != -1 {
+					fmt.Print("Node already exists.\n>>>")
+					break
+				}
+
+				node = chord.CreateNodeAndJoin(ID, IP_str, "")
 				node.PrintNode()
 				fmt.Print("Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
-				// Step 1: Wait for connections.
+
+				go node_listen(LISTENING_PORT, quit_listen)
 
 			case "p": // PRINT NODE DATA
 				if node.Identifier == -1 {
@@ -110,34 +152,36 @@ func main() {
 
 				node.PrintNode()
 				fmt.Print("\n>>>")
-				// (Still waiting for connection.)
 
 			case "j": // JOIN A NETWORK
+
+				if node.Identifier != -1 {
+					fmt.Print("Node already exists.\n>>>")
+					break
+				}
+
 				if len(inputs) <= 1 {
 					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
 
 				remoteNode_IP_str := inputs[1]
-				remoteNode_ID := hash(fmt.Sprint(ip2Long(remoteNode_IP_str)))
+				remoteNode_IP := fmt.Sprint(ip2Long(remoteNode_IP_str))
+				remoteNode_ID := hash(remoteNode_IP)
 
-				//node := chord.CreateNodeAndJoin(ID, remoteNode_ID) //Don't know the node. Only knows IP
-				//node.PrintNode()
-
-				// Step 1: Request for successor from remoteNode. | Receive successor IP.
-				// fmt.Print(chord.ping(remoteNode_IP_str))
-
-				// Step 2: Request for successor list from successor IP. | Receive successor list and predecessor.
-				// Step 3: Process own information (successor list and predecessor).
+				node = chord.CreateNodeAndJoin(ID, IP_str, remoteNode_IP_str)
 
 				fmt.Print("Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". remoteNode is " + fmt.Sprint(remoteNode_ID) + "." + "\n>>>")
-				// Step 4: Wait for connections.
+
+				go node_listen(LISTENING_PORT, quit_listen)
 
 			case "l": // LEAVE A NETWORK
 				if node.Identifier == -1 {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
+
+				quit_listen <- true
 
 				node = &newNode
 				fmt.Print("Left chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
@@ -162,6 +206,7 @@ func main() {
 				// Step 1: Check own hash table.
 				// Step 2: Forward query. | cObtain query.
 				// (Still waiting for connection.)
+
 				fmt.Print("\n>>>")
 
 			default:
