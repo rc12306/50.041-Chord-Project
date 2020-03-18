@@ -9,39 +9,39 @@ type RemoteNode struct {
 	IP         string
 }
 
-// GetSuccessorList gets successor list of remote node through RPC
-func (remoteNode *RemoteNode) GetSuccessorList() []*RemoteNode {
+// GetSuccessorListRPC gets successor list of remote node through RPC
+func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
 	return querySuccessorList(remoteNode.IP)
 }
 
-// GetPredecessor gets predecessor of remote node through RPC
-func (remoteNode *RemoteNode) GetPredecessor() *RemoteNode {
+// GetPredecessorRPC gets predecessor of remote node through RPC
+func (remoteNode *RemoteNode) GetPredecessorRPC() *RemoteNode {
 	return queryPredecessor(remoteNode.IP)[0]
 }
 
-// FindSuccessor finds sucessor of id of remote node through RPC
-func (remoteNode *RemoteNode) FindSuccessor(id int) *RemoteNode {
+// FindSuccessorRPC finds sucessor of id of remote node through RPC
+func (remoteNode *RemoteNode) FindSuccessorRPC(id int) *RemoteNode {
 	// connect to remote node and ask it to run findsuccessor()
 	return query(id, remoteNode.IP)
 }
 
-// Notify notifies remote node that portential thinks it may be the new predecessor of it through RPC?
-func (remoteNode *RemoteNode) Notify(potential *RemoteNode) {
+// NotifyRPC notifies remote node that portential thinks it may be the new predecessor of it through RPC?
+func (remoteNode *RemoteNode) NotifyRPC(potential *RemoteNode) {
 	notify(remoteNode.IP, potential)
 }
 
-// NoReply checks if remoteNode is alive
-func (remoteNode *RemoteNode) NoReply() bool {
-	return false
+// NoReplyRPC checks if remoteNode is alive
+func (remoteNode *RemoteNode) NoReplyRPC() bool {
+	return ping(remoteNode.IP)
 }
 
-// Get file using hashed file name as key from remote node
-func (remoteNode *RemoteNode) Get(key string) string {
+// GetRPC gets file using hashed file name as key from remote node
+func (remoteNode *RemoteNode) GetRPC(key string) string {
 	return queryValue(remoteNode.IP, key)
 }
 
-// Put key-value pair into remote node's hash table through RPC
-func (remoteNode *RemoteNode) Put(key, value string) error {
+// PutRPC puts key-value pair into remote node's hash table through RPC
+func (remoteNode *RemoteNode) PutRPC(key, value string) error {
 	putKeyValue(remoteNode.IP, key, value)
 	// TODO: implement error handling
 	return nil
