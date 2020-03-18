@@ -3,20 +3,20 @@ package chord
 import "errors"
 
 // Get file using hashed file name as key from node
-func (node *Node) Get(key string) (string, error) {
+func (node *Node) get(key string) (string, error) {
 	// TODO: check if key-value pair exists
 	return node.hashTable[key], nil
 }
 
-// Put file using hashed file name as key into node's hashtable
-func (node *Node) Put(key string, value string) error {
+// put file using hashed file name as key into node's hashtable
+func (node *Node) put(key string, value string) error {
 	// TODO: check if key already exists
 	node.hashTable[key] = value
 	return nil
 }
 
 // Delete removes key-value pair from storage
-func (node *Node) Delete(key string) error {
+func (node *Node) delete(key string) error {
 	_, keyExists := node.hashTable[key]
 	if keyExists {
 		delete(node.hashTable, key)
@@ -26,13 +26,13 @@ func (node *Node) Delete(key string) error {
 }
 
 // TransferKeys allow reassignment of keys on node join/fail
-func (node *Node) TransferKeys(targetNode *Node, start int, end int) error {
+func (node *Node) TransferKeys(targetNode *RemoteNode, start int, end int) error {
 	for key, value := range node.hashTable {
 		keyIdentifier := Hash(key)
 		if BetweenLeftIncl(keyIdentifier, start, end) {
 			err := targetNode.Put(key, value)
 			if err != nil {
-				node.Delete(key)
+				node.delete(key)
 			} else {
 				return errors.New("Unable to transfer key " + key)
 			}

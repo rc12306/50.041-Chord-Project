@@ -14,9 +14,10 @@ const checkPredUpdateRate = 100 * time.Millisecond
 // Node refers to Chord Node
 type Node struct {
 	Identifier    int
-	predecessor   *Node
-	fingerTable   []*Node
-	successorList []*Node
+	IP            string
+	predecessor   *RemoteNode
+	fingerTable   []*RemoteNode
+	successorList []*RemoteNode
 	stop          chan bool
 	fail          bool
 	hashTable     map[string]string
@@ -25,20 +26,17 @@ type Node struct {
 // create new Chord ring
 func (node *Node) create() error {
 	node.predecessor = nil
-	node.successorList = make([]*Node, tableSize)
-	node.successorList[0] = node
+	node.successorList = make([]*RemoteNode, tableSize)
+	node.successorList[0] = &RemoteNode{Identifier: node.Identifier, IP: node.IP}
 	node.hashTable = make(map[string]string)
 	return nil
 }
 
 // join Chord ring which has remoteNode inside
-func (node *Node) join(remoteNode *Node) error {
+func (node *Node) join(remoteNode *RemoteNode) error {
 	node.predecessor = nil
-	successor, err := remoteNode.findSuccessor(node.Identifier)
-	if err != nil {
-		return err
-	}
-	node.successorList = make([]*Node, tableSize)
+	successor := remoteNode.FindSuccessor(node.Identifier)
+	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = successor
 	node.hashTable = make(map[string]string)
 	node.updateSuccessorList(0)
@@ -46,9 +44,9 @@ func (node *Node) join(remoteNode *Node) error {
 }
 
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
-func (node *Node) notify(remoteNode *Node) {
+func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
-		if remoteNode != node {
+		if remoteNode.IP != node.IP {
 			node.predecessor = remoteNode
 			node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
 		}
@@ -72,11 +70,11 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
-			x := node.successorList[0].predecessor
-			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node == node.successorList[0]) {
+			x := node.successorList[0].GetPredecessor()
+			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
-			node.successorList[0].notify(node)
+			node.successorList[0].Notify(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			node.updateSuccessorList(0)
 		case <-node.stop:
 			ticker.Stop()
@@ -85,15 +83,11 @@ func (node *Node) stabilise() {
 	}
 }
 
-func (node *Node) noReply() bool {
-	return node.fail
-}
-
 // called periodically - updates finger table entries
 // allows new nodes to initialise their finger tables and existing nodes to incorporate new nodes into their finger tables
 func (node *Node) fixFingers() {
 	// initialisation of finger table can be improved
-	node.fingerTable = make([]*Node, tableSize)
+	node.fingerTable = make([]*RemoteNode, tableSize)
 	next := 0
 	ticker := time.NewTicker(fingerTableUpdateRate)
 	for {
@@ -101,7 +95,7 @@ func (node *Node) fixFingers() {
 		case <-ticker.C:
 			// updateFinger
 			nextNode := int(math.Pow(2, float64(next)))
-			closestSuccessor, _ := node.findSuccessor((node.Identifier + nextNode) % ringSize)
+			closestSuccessor := node.findSuccessor((node.Identifier + nextNode) % ringSize)
 			node.fingerTable[next] = closestSuccessor
 			if node.Identifier == 51 {
 				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
@@ -123,7 +117,7 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor != nil && node.predecessor.noReply() {
+			if node.predecessor != nil && node.predecessor.NoReply() {
 				node.predecessor = nil
 			}
 		case <-node.stop:
@@ -136,16 +130,16 @@ func (node *Node) checkPredecessor() {
 }
 
 // find successor of node/key with identifier id i.e. smallest node with identifier >= id
-func (node *Node) findSuccessor(id int) (*Node, error) {
+func (node *Node) findSuccessor(id int) *RemoteNode {
 	if BetweenRightIncl(id, node.Identifier, node.successorList[0].Identifier) {
-		return node.successorList[0], nil
+		return node.successorList[0]
 	}
 	// get closest preceding node to id in the finger table of this node
 	n, _ := node.findClosestPredecessor(id)
-	if n == node {
-		return node, nil
+	if n.IP == node.IP {
+		return n
 	}
-	return n.findSuccessor(id)
+	return n.FindSuccessor(id)
 
 	/*
 		if a node fails during the find successor procedure:
@@ -154,11 +148,11 @@ func (node *Node) findSuccessor(id int) (*Node, error) {
 }
 
 // find highest predecessor of node/key with identifier id i.e. largest node with identifier < id
-func (node *Node) findClosestPredecessor(id int) (*Node, error) {
+func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 	/*
 		searches finger table (and successor list) for most immediate predecessor of id
 	*/
-	closestPred := node
+	closestPred := &RemoteNode{IP: node.IP, Identifier: node.Identifier}
 	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
 		if fingerEntry != nil && Between(fingerEntry.Identifier, node.Identifier, id) {
@@ -179,7 +173,7 @@ func (node *Node) findClosestPredecessor(id int) (*Node, error) {
 }
 
 func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
-	if node.successorList[firstLiveSuccessor].noReply() {
+	if node.successorList[firstLiveSuccessor].NoReply() {
 		firstLiveSuccessor++
 		if firstLiveSuccessor == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -187,8 +181,8 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
-		newSuccessorList := node.successorList[firstLiveSuccessor].successorList
-		copyList := make([]*Node, tableSize)
+		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorList()
+		copyList := make([]*RemoteNode, tableSize)
 		if newSuccessorList[0] != node.successorList[firstLiveSuccessor] {
 			copy(copyList[1:], newSuccessorList)
 			copyList[0] = node.successorList[firstLiveSuccessor]
@@ -200,7 +194,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 }
 
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
-func CreateNodeAndJoin(identifier int, joinNode *Node) (newNode *Node) {
+func CreateNodeAndJoin(identifier int, joinNode *RemoteNode) (newNode *Node) {
 	node := Node{
 		Identifier: identifier,
 	}
