@@ -56,6 +56,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		fmt.Println("Receive ping from " + payload.SenderIP)
 		// reply to ping
 		*reply = Packet{"pong", "alive", nil, ChordNode.IP}
+		// *reply = Packet{"pong", "alive", nil, "127.0.0.1"}
 		return nil
 	case "pong":
 		fmt.Println("Receive pong from " + payload.SenderIP)
@@ -64,7 +65,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "query":
 		fmt.Println("Receive query from " + payload.SenderIP)
 		// Change the hash from string to int
-		key, _ := strconv.Atoi(reply.Msg)
+		key, _ := strconv.Atoi(payload.Msg)
 		// Call node to do the search
 		node := handleQuery(key)
 		// Form the packet for reply
@@ -101,7 +102,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		senderIP: 	sender IP (will it be given in node.go?)
 		receiverIP:	receiver IP (must be given by node.go)
 */
-func ping(receiverIP string) bool {
+func (node *Node) Ping(receiverIP string) bool {
 	// try to handshake with other node
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
@@ -111,7 +112,8 @@ func ping(receiverIP string) bool {
 	}
 
 	// Set up arguments
-	payload := &Packet{"ping", "Are you alive?", nil, ChordNode.IP}
+	// payload := &Packet{"ping", "Are you alive?", nil, ChordNode.IP}
+	payload := &Packet{"ping", "Are you alive?", nil, "127.0.0.1"}
 	var reply Packet
 
 	// and make an rpc call
@@ -121,6 +123,7 @@ func ping(receiverIP string) bool {
 		return false
 	}
 	fmt.Println(reply.SenderIP + " is alive. ")
+	client.Close()
 	return true
 }
 
@@ -141,7 +144,7 @@ func pong() {
 			hash of IP
 	return id of node who holds the file
 */
-func query(id int, closestPredIP string) *RemoteNode {
+func (node *Node) Query(id int, closestPredIP string) *RemoteNode {
 	// query closest predecessor
 	// get closestPred IP
 	client, err := rpc.Dial("tcp", closestPredIP+":8081")
@@ -158,7 +161,7 @@ func query(id int, closestPredIP string) *RemoteNode {
 	if err != nil {
 		log.Fatal("Connection error:", err)
 	}
-
+	client.Close()
 	return reply.List[0]
 }
 
@@ -183,7 +186,7 @@ func answer() {
 		receiverIP:	IP of node you want to query
 	return successor list
 */
-func querySuccessorList(receiverIP string) []*RemoteNode {
+func (node *Node) QuerySuccessorList(receiverIP string) []*RemoteNode {
 
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
@@ -199,6 +202,8 @@ func querySuccessorList(receiverIP string) []*RemoteNode {
 	if err != nil {
 		log.Fatal("Connection error:", err)
 	}
+
+	client.Close()
 	return reply.List
 }
 
@@ -214,7 +219,7 @@ func handleQuerySuccesorList() []*RemoteNode {
 		receiverIP:	IP of node you want to query
 	return predecessor
 */
-func queryPredecessor(receiverIP string) []*RemoteNode {
+func (node *Node) QueryPredecessor(receiverIP string) []*RemoteNode {
 
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
@@ -230,6 +235,8 @@ func queryPredecessor(receiverIP string) []*RemoteNode {
 	if err != nil {
 		log.Fatal("Connection error:", err)
 	}
+
+	client.Close()
 	return reply.List
 }
 
@@ -244,7 +251,7 @@ func handleQueryPredecessor() *RemoteNode {
 	Args:
 		receiverIP:	IP of node you want to notify
 */
-func notify(receiverIP string) {
+func (node *Node) Notify(receiverIP string) {
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)
@@ -260,6 +267,8 @@ func notify(receiverIP string) {
 	if err != nil {
 		log.Fatal("Connection error:", err)
 	}
+
+	client.Close()
 	return
 }
 
