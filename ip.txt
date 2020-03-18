@@ -1,6 +1,0 @@
-/50041-chord-project_node_4 - 172.22.0.6
-/50041-chord-project_node_5 - 172.22.0.7
-/50041-chord-project_node_3 - 172.22.0.5
-/50041-chord-project_node_2 - 172.22.0.4
-/50041-chord-project_node_1 - 172.22.0.3
-/50041-chord-project_rootnode_1 - 172.22.0.2
