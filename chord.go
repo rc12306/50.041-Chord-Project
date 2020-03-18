@@ -104,7 +104,7 @@ func main() {
 
 			case "p": // PRINT NODE DATA
 				if node.Identifier == -1 {
-					fmt.Println("Invalid node.\n>>>")
+					fmt.Print("Invalid node.\n>>>")
 					break
 				}
 
@@ -125,6 +125,8 @@ func main() {
 				//node.PrintNode()
 
 				// Step 1: Request for successor from remoteNode. | Receive successor IP.
+				// fmt.Print(chord.ping(remoteNode_IP_str))
+
 				// Step 2: Request for successor list from successor IP. | Receive successor list and predecessor.
 				// Step 3: Process own information (successor list and predecessor).
 
@@ -133,7 +135,7 @@ func main() {
 
 			case "l": // LEAVE A NETWORK
 				if node.Identifier == -1 {
-					fmt.Println("Invalid node.\n>>>")
+					fmt.Print("Invalid node.\n>>>")
 					break
 				}
 
@@ -142,7 +144,7 @@ func main() {
 
 			case "f": // FIND A FILE BY FILENAME
 				if node.Identifier == -1 {
-					fmt.Println("Invalid node.\n>>>")
+					fmt.Print("Invalid node.\n>>>")
 					break
 				}
 
@@ -163,7 +165,7 @@ func main() {
 				fmt.Print("\n>>>")
 
 			default:
-				fmt.Println("Invalid input.\n>>>")
+				fmt.Print("Invalid input.\n>>>")
 			}
 		} else {
 			fmt.Print(">>>")
