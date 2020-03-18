@@ -35,7 +35,7 @@ func (node *Node) create() error {
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *RemoteNode) error {
 	node.predecessor = nil
-	successor := remoteNode.FindSuccessor(node.Identifier)
+	successor := remoteNode.FindSuccessorRPC(node.Identifier)
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = successor
 	node.hashTable = make(map[string]string)
@@ -70,11 +70,11 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
-			x := node.successorList[0].GetPredecessor()
+			x := node.successorList[0].GetPredecessorRPC()
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
-			node.successorList[0].Notify(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
+			node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			node.updateSuccessorList(0)
 		case <-node.stop:
 			ticker.Stop()
@@ -117,7 +117,7 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor != nil && node.predecessor.NoReply() {
+			if node.predecessor != nil && node.predecessor.NoReplyRPC() {
 				node.predecessor = nil
 			}
 		case <-node.stop:
@@ -139,7 +139,7 @@ func (node *Node) findSuccessor(id int) *RemoteNode {
 	if n.IP == node.IP {
 		return n
 	}
-	return n.FindSuccessor(id)
+	return n.FindSuccessorRPC(id)
 
 	/*
 		if a node fails during the find successor procedure:
@@ -173,7 +173,7 @@ func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 }
 
 func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
-	if node.successorList[firstLiveSuccessor].NoReply() {
+	if node.successorList[firstLiveSuccessor].NoReplyRPC() {
 		firstLiveSuccessor++
 		if firstLiveSuccessor == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -181,7 +181,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
-		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorList()
+		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
 		if newSuccessorList[0] != node.successorList[firstLiveSuccessor] {
 			copy(copyList[1:], newSuccessorList)

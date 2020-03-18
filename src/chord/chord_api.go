@@ -66,7 +66,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "query":
 		fmt.Println("Receive query from " + payload.SenderIP)
 		// Change the hash from string to int
-		key, _ := strconv.Atoi(reply.Msg)
+		key, _ := strconv.Atoi(payload.Msg)
 		// Call node to do the search
 		node := handleQuery(key)
 		// Form the packet for reply
