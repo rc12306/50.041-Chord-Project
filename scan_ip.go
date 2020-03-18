@@ -1,11 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net"
 	"os/exec"
-	"log"
-	"fmt"
-	"reflect"
 )
 
 func GetOutboundIP() string {
@@ -17,7 +16,7 @@ func GetOutboundIP() string {
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
-	fmt.Println(localAddr.IP)
+	//fmt.Println(localAddr.IP)
 
 	return localAddr.IP.String()
 }
@@ -68,7 +67,8 @@ func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
 	var alives []Pong
 	for i := 0; i < pongNum; i++ {
 		pong := <-pongChan
-		fmt.Println("received:", pong)
+		//fmt.Println("received:", pong)
+
 		if pong.Alive {
 			alives = append(alives, pong)
 		}
@@ -76,10 +76,12 @@ func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
 	doneChan <- alives
 }
 
-func main() {
-	myIP := GetOutboundIP() + "/24"
+func networkIP() (string, []string) {
+	fmt.Println("Searching for IP of nodes in network ... ...")
+
+	basicIP := GetOutboundIP()
+	myIP := basicIP + "/24"
 	fmt.Println(myIP)
-	fmt.Println(reflect.TypeOf(myIP))
 	hosts, _ := Hosts(myIP)
 	concurrentMax := 100
 	pingChan := make(chan string, concurrentMax)
@@ -94,14 +96,26 @@ func main() {
 
 	for _, ip := range hosts {
 		pingChan <- ip
-		fmt.Println("sent: " + ip)
+		//fmt.Println("sent: " + ip)
 	}
 
 	alives := <-doneChan
-	fmt.Println(alives)
 
-	for _, i := range alives {
-		fmt.Println((*alives)[i])
-		fmt.Println(reflect.TypeOf((*alives)[i]))
+	var ipSlice []string
+
+	for _, addr := range alives {
+		if addr.Ip != basicIP {
+			ipSlice = append(ipSlice, addr.Ip)
+		}
 	}
+
+	fmt.Println("Search completed!")
+
+	return basicIP, ipSlice
+}
+
+func main() {
+	myip, ipslice := networkIP()
+	fmt.Println("\n My IP addr: ", myip)
+	fmt.Println("Other IP in network: ", ipslice, "\n")
 }
