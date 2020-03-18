@@ -5,11 +5,11 @@ import (
 	// "errors"
 	"log"
 	// need both net and net/rpc because node acts as sender and receiver
+	"chord/src/chord"
 	"net"
 	"net/rpc"
-	"time"
-	"chord/src/chord"
 	"sync"
+	"time"
 	// "context"
 )
 
@@ -24,7 +24,7 @@ func server() {
 	}
 	fmt.Println("IP address: ")
 	inbound, err := net.ListenTCP("tcp", addy)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,10 +33,10 @@ func server() {
 	rpc.Register(listener)
 	rpc.Accept(inbound)
 	fmt.Println("Accepted")
-	
- }
 
- func client() {
+}
+
+func client() {
 	defer wg.Done()
 	fmt.Println("Client started")
 	client, err := rpc.Dial("tcp", "localhost:8081")
@@ -44,7 +44,7 @@ func server() {
 		log.Fatal(err)
 	}
 
-	newpacket1 := chord.Packet{"ping","Are you alive?","0.0.0.0"}
+	newpacket1 := chord.Packet{"ping", "Are you alive?", nil, "0.0.0.0"}
 	var reply1 chord.Packet
 
 	err = client.Call("Listener.Receive", newpacket1, &reply1)
@@ -55,7 +55,7 @@ func server() {
 
 	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply1.PacketType, reply1.Msg, reply1.SenderIP)
 
-	newpacket2 := chord.Packet{"pong","Yes","0.0.0.0"}
+	newpacket2 := chord.Packet{"pong", "Yes", nil, "0.0.0.0"}
 	var reply2 chord.Packet
 
 	err = client.Call("Listener.Receive", newpacket2, &reply2)
@@ -66,7 +66,7 @@ func server() {
 
 	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply2.PacketType, reply2.Msg, reply2.SenderIP)
 
-	newpacket3 := chord.Packet{"query","100","0.0.0.0"}
+	newpacket3 := chord.Packet{"query", "100", nil, "0.0.0.0"}
 	var reply3 chord.Packet
 
 	err = client.Call("Listener.Receive", newpacket3, &reply3)
@@ -77,7 +77,7 @@ func server() {
 
 	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply3.PacketType, reply3.Msg, reply3.SenderIP)
 
-	newpacket4 := chord.Packet{"answer","1","0.0.0.0"}
+	newpacket4 := chord.Packet{"answer", "1", nil, "0.0.0.0"}
 	var reply4 chord.Packet
 
 	err = client.Call("Listener.Receive", newpacket4, &reply4)
@@ -88,7 +88,7 @@ func server() {
 
 	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply4.PacketType, reply4.Msg, reply4.SenderIP)
 
-	newpacket5 := chord.Packet{"others","blah","0.0.0.0"}
+	newpacket5 := chord.Packet{"others", "blah", nil, "0.0.0.0"}
 	var reply5 chord.Packet
 
 	err = client.Call("Listener.Receive", newpacket5, &reply5)
