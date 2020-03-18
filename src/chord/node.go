@@ -2,10 +2,13 @@ package chord
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"time"
 )
 
-const keySize = 8
+const tableSize = 6
+const ringSize = 64
 const fingerTableUpdateRate = 50 * time.Millisecond
 const checkPredUpdateRate = 100 * time.Millisecond
 
@@ -23,7 +26,7 @@ type Node struct {
 // create new Chord ring
 func (node *Node) create() error {
 	node.predecessor = nil
-	node.successorList = make([]*Node, keySize)
+	node.successorList = make([]*Node, tableSize)
 	node.successorList[0] = node
 	node.hashTable = make(map[string]string)
 	return nil
@@ -31,12 +34,12 @@ func (node *Node) create() error {
 
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *Node) error {
-	// node.predecessor = nil
+	node.predecessor = nil
 	successor, err := remoteNode.findSuccessor(node.identifier)
 	if err != nil {
 		return err
 	}
-	node.successorList = make([]*Node, keySize)
+	node.successorList = make([]*Node, tableSize)
 	node.successorList[0] = successor
 	node.hashTable = make(map[string]string)
 	node.updateSuccessorList(0)
@@ -46,8 +49,10 @@ func (node *Node) join(remoteNode *Node) error {
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *Node) {
 	if node.predecessor == nil || Between(remoteNode.identifier, node.predecessor.identifier, node.identifier) {
-		node.predecessor = remoteNode
-		node.TransferKeys(remoteNode, remoteNode.identifier, node.identifier)
+		if remoteNode != node {
+			node.predecessor = remoteNode
+			node.TransferKeys(remoteNode, remoteNode.identifier, node.identifier)
+		}
 	}
 }
 
@@ -57,7 +62,7 @@ func (node *Node) stabilise() {
 		[SUCESSOR POINTER]
 		asks successor for successor's predecessor p
 		decides whether p should be n's successor instead (happens when node p joined the system recently)
-		notifies node n's successor of n's existence so that successor can change predecessor to n (done only if the successor knows of no closer predecessor than n)
+		notifies node n's successor of p's existence so that successor can change predecessor to n (done only if the successor knows of no closer predecessor than n)
 		[SUCCESSOR LIST]
 		copies successor s's list, removing its last entry, and prepending s to it
 		if it notices successor has failed:
@@ -69,7 +74,7 @@ func (node *Node) stabilise() {
 		select {
 		case <-ticker.C:
 			x := node.successorList[0].predecessor
-			if x != nil && Between(x.identifier, node.identifier, node.successorList[0].identifier) {
+			if x != nil && (Between(x.identifier, node.identifier, node.successorList[0].identifier) || node == node.successorList[0]) {
 				node.successorList[0] = x
 			}
 			node.successorList[0].notify(node)
@@ -89,16 +94,20 @@ func (node *Node) noReply() bool {
 // allows new nodes to initialise their finger tables and existing nodes to incorporate new nodes into their finger tables
 func (node *Node) fixFingers() {
 	// initialisation of finger table can be improved
-	node.fingerTable = make([]*Node, keySize)
+	node.fingerTable = make([]*Node, tableSize)
 	next := 0
 	ticker := time.NewTicker(fingerTableUpdateRate)
 	for {
 		select {
 		case <-ticker.C:
 			// updateFinger
-			nextNode := 2 ^ (next - 1)
-			node.fingerTable[next], _ = node.findSuccessor((node.identifier + nextNode) % keySize)
-			next = (next + 1) % keySize
+			nextNode := int(math.Pow(2, float64(next)))
+			closestSuccessor, _ := node.findSuccessor((node.identifier + nextNode) % ringSize)
+			node.fingerTable[next] = closestSuccessor
+			if node.identifier == 51 {
+				// fmt.Println((node.identifier+nextNode)%ringSize, node.fingerTable[next].identifier, closestSuccessor.identifier)
+			}
+			next = (next + 1) % tableSize
 		case <-node.stop:
 			ticker.Stop()
 			return
@@ -133,7 +142,7 @@ func (node *Node) findSuccessor(id int) (*Node, error) {
 		return node.successorList[0], nil
 	}
 	// get closest preceding node to id in the finger table of this node
-	n, _ := node.findPredecessor(id)
+	n, _ := node.findClosestPredecessor(id)
 	if n == node {
 		return node, nil
 	}
@@ -146,7 +155,7 @@ func (node *Node) findSuccessor(id int) (*Node, error) {
 }
 
 // find highest predecessor of node/key with identifier id i.e. largest node with identifier < id
-func (node *Node) findPredecessor(id int) (*Node, error) {
+func (node *Node) findClosestPredecessor(id int) (*Node, error) {
 	/*
 		searches finger table (and successor list) for most immediate predecessor of id
 	*/
@@ -180,11 +189,13 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 		}
 	} else {
 		newSuccessorList := node.successorList[firstLiveSuccessor].successorList
-		copyList := make([]*Node, len(newSuccessorList))
-		if len(newSuccessorList) > 1 {
+		copyList := make([]*Node, tableSize)
+		if newSuccessorList[0] != node.successorList[firstLiveSuccessor] {
 			copy(copyList[1:], newSuccessorList)
+			copyList[0] = node.successorList[firstLiveSuccessor]
+		} else {
+			copy(copyList, newSuccessorList)
 		}
-		copyList[0] = node.successorList[firstLiveSuccessor]
 		node.successorList = copyList
 	}
 }
@@ -203,4 +214,36 @@ func CreateNodeAndJoin(identifier int, joinNode *Node) (newNode *Node) {
 	go node.fixFingers()
 	go node.checkPredecessor()
 	return &node
+}
+
+// PrintNode prints the node info in a formatted way
+func (node *Node) PrintNode() {
+	print := "=========================================================\n"
+	print += "Identifier: " + strconv.Itoa(node.identifier) + "\n"
+	if node.predecessor == nil {
+		print += "Predecessor: nil \n"
+	} else {
+		print += "Predecessor: " + strconv.Itoa(node.predecessor.identifier) + "\n"
+	}
+	print += "Successor: " + strconv.Itoa(node.successorList[0].identifier) + "\n"
+	print += "Successor List: "
+	for _, successor := range node.successorList {
+		if successor != nil {
+			print += strconv.Itoa(successor.identifier) + ", "
+		}
+	}
+	print += "\nFinger Table: "
+	for _, finger := range node.fingerTable {
+		if finger != nil {
+			print += strconv.Itoa(finger.identifier) + ", "
+		}
+	}
+	print += "\nHash Table:\n"
+	for key, value := range node.hashTable {
+		keyIdentifier := hash(key)
+		print += "\t" + key + " (" + strconv.Itoa(keyIdentifier) + "): " + value + "\n"
+	}
+	print += "\n========================================================="
+
+	fmt.Println(print)
 }

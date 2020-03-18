@@ -3,6 +3,7 @@ package main
 import (
 	"chord/src/chord"
 	"fmt"
+	"time"
 )
 
 func main() {
@@ -16,7 +17,17 @@ func main() {
 	nodeH := chord.CreateNodeAndJoin(48, nodeF)
 	nodeI := chord.CreateNodeAndJoin(51, nodeH)
 	nodeJ := chord.CreateNodeAndJoin(56, nodeB)
-	fmt.Println(nodeE, nodeG, nodeI, nodeJ)
+	time.Sleep(time.Second * 5)
+	nodeA.PrintNode()
+	nodeB.PrintNode()
+	nodeC.PrintNode()
+	nodeD.PrintNode()
+	nodeE.PrintNode()
+	nodeF.PrintNode()
+	nodeG.PrintNode()
+	nodeH.PrintNode()
+	nodeI.PrintNode()
+	nodeJ.PrintNode()
 	var input string
 	fmt.Scanln(&input)
 }

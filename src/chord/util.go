@@ -8,7 +8,7 @@ import (
 // Between checks if identifier is in range (a, b)
 func Between(nodeX, nodeA, nodeB int) bool {
 	if nodeB < nodeA {
-		nodeB += keySize
+		nodeB += ringSize
 	}
 	return nodeX > nodeA && nodeX < nodeB
 }
@@ -16,7 +16,7 @@ func Between(nodeX, nodeA, nodeB int) bool {
 // BetweenRightIncl checks if identifier is in range (a, b]
 func BetweenRightIncl(nodeX, nodeA, nodeB int) bool {
 	if nodeB < nodeA {
-		nodeB += keySize
+		nodeB += ringSize
 	}
 	return nodeX > nodeA && nodeX <= nodeB
 }
@@ -24,7 +24,7 @@ func BetweenRightIncl(nodeX, nodeA, nodeB int) bool {
 // BetweenLeftIncl checks if identifier is in range [a, b)
 func BetweenLeftIncl(nodeX, nodeA, nodeB int) bool {
 	if nodeB < nodeA {
-		nodeB += keySize
+		nodeB += ringSize
 	}
 	return nodeX >= nodeA && nodeX < nodeB
 }
