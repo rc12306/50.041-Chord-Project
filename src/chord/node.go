@@ -2,16 +2,18 @@ package chord
 
 import (
 	"fmt"
+	"math"
 	"time"
 )
 
-const keySize = 8
+const tableSize = 6
+const ringSize = 64
 const fingerTableUpdateRate = 50 * time.Millisecond
 const checkPredUpdateRate = 100 * time.Millisecond
 
 // Node refers to Chord Node
 type Node struct {
-	identifier    int
+	Identifier    int
 	predecessor   *Node
 	fingerTable   []*Node
 	successorList []*Node
@@ -23,7 +25,8 @@ type Node struct {
 // create new Chord ring
 func (node *Node) create() error {
 	node.predecessor = nil
-	node.successorList = []*Node{node}
+	node.successorList = make([]*Node, tableSize)
+	node.successorList[0] = node
 	node.hashTable = make(map[string]string)
 	return nil
 }
@@ -31,11 +34,12 @@ func (node *Node) create() error {
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *Node) error {
 	node.predecessor = nil
-	successor, err := remoteNode.findSuccessor(node.identifier)
+	successor, err := remoteNode.findSuccessor(node.Identifier)
 	if err != nil {
 		return err
 	}
-	node.successorList = []*Node{successor}
+	node.successorList = make([]*Node, tableSize)
+	node.successorList[0] = successor
 	node.hashTable = make(map[string]string)
 	node.updateSuccessorList(0)
 	return nil
@@ -43,9 +47,11 @@ func (node *Node) join(remoteNode *Node) error {
 
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *Node) {
-	if node.predecessor == nil || Between(remoteNode.identifier, node.predecessor.identifier, node.identifier) {
-		node.predecessor = remoteNode
-		node.TransferKeys(remoteNode, remoteNode.identifier, node.identifier)
+	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
+		if remoteNode != node {
+			node.predecessor = remoteNode
+			node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		}
 	}
 }
 
@@ -55,19 +61,28 @@ func (node *Node) stabilise() {
 		[SUCESSOR POINTER]
 		asks successor for successor's predecessor p
 		decides whether p should be n's successor instead (happens when node p joined the system recently)
-		notifies node n's successor of n's existence so that successor can change predecessor to n (done only if the successor knows of no closer predecessor than n)
+		notifies node n's successor of p's existence so that successor can change predecessor to n (done only if the successor knows of no closer predecessor than n)
 		[SUCCESSOR LIST]
 		copies successor s's list, removing its last entry, and prepending s to it
 		if it notices successor has failed:
 			replaces it with the first live entry in its successor list
 			reconciles successor list with new successor
 	*/
-	x := node.successorList[0].predecessor
-	if x != nil && Between(x.identifier, node.identifier, node.successorList[0].identifier) {
-		node.successorList[0] = x
+	ticker := time.NewTicker(fingerTableUpdateRate)
+	for {
+		select {
+		case <-ticker.C:
+			x := node.successorList[0].predecessor
+			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node == node.successorList[0]) {
+				node.successorList[0] = x
+			}
+			node.successorList[0].notify(node)
+			node.updateSuccessorList(0)
+		case <-node.stop:
+			ticker.Stop()
+			return
+		}
 	}
-	node.successorList[0].notify(node)
-	node.updateSuccessorList(0)
 }
 
 func (node *Node) noReply() bool {
@@ -78,16 +93,20 @@ func (node *Node) noReply() bool {
 // allows new nodes to initialise their finger tables and existing nodes to incorporate new nodes into their finger tables
 func (node *Node) fixFingers() {
 	// initialisation of finger table can be improved
-	node.fingerTable = make([]*Node, 0)
+	node.fingerTable = make([]*Node, tableSize)
 	next := 0
 	ticker := time.NewTicker(fingerTableUpdateRate)
 	for {
 		select {
 		case <-ticker.C:
-			//updateFinger
-			nextNode := 2 ^ (next - 1)
-			node.fingerTable[next], _ = node.findSuccessor((node.identifier + nextNode) % keySize)
-			next = (next + 1) % keySize
+			// updateFinger
+			nextNode := int(math.Pow(2, float64(next)))
+			closestSuccessor, _ := node.findSuccessor((node.Identifier + nextNode) % ringSize)
+			node.fingerTable[next] = closestSuccessor
+			if node.Identifier == 51 {
+				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
+			}
+			next = (next + 1) % tableSize
 		case <-node.stop:
 			ticker.Stop()
 			return
@@ -104,7 +123,7 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor.noReply() {
+			if node.predecessor != nil && node.predecessor.noReply() {
 				node.predecessor = nil
 			}
 		case <-node.stop:
@@ -118,11 +137,14 @@ func (node *Node) checkPredecessor() {
 
 // find successor of node/key with identifier id i.e. smallest node with identifier >= id
 func (node *Node) findSuccessor(id int) (*Node, error) {
-	if BetweenRightIncl(id, node.identifier, node.successorList[0].identifier) {
+	if BetweenRightIncl(id, node.Identifier, node.successorList[0].Identifier) {
 		return node.successorList[0], nil
 	}
 	// get closest preceding node to id in the finger table of this node
-	n, _ := node.findPredecessor(id)
+	n, _ := node.findClosestPredecessor(id)
+	if n == node {
+		return node, nil
+	}
 	return n.findSuccessor(id)
 
 	/*
@@ -132,22 +154,23 @@ func (node *Node) findSuccessor(id int) (*Node, error) {
 }
 
 // find highest predecessor of node/key with identifier id i.e. largest node with identifier < id
-func (node *Node) findPredecessor(id int) (*Node, error) {
+func (node *Node) findClosestPredecessor(id int) (*Node, error) {
 	/*
 		searches finger table (and successor list) for most immediate predecessor of id
 	*/
 	closestPred := node
 	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
-		if Between(fingerEntry.identifier, node.identifier, id) {
+		if fingerEntry != nil && Between(fingerEntry.Identifier, node.Identifier, id) {
 			closestPred = fingerEntry
 			break
 		}
 	}
-	for i := len(node.fingerTable); i >= 0; i-- {
+	for i := len(node.successorList) - 1; i >= 0; i-- {
 		successorListEntry := node.successorList[i]
-		if successorListEntry.identifier > closestPred.identifier &&
-			Between(successorListEntry.identifier, node.identifier, id) {
+		if successorListEntry != nil &&
+			successorListEntry.Identifier > closestPred.Identifier &&
+			Between(successorListEntry.Identifier, node.Identifier, id) {
 			closestPred = successorListEntry
 			break
 		}
@@ -164,18 +187,22 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
-		copyList := make([]*Node, keySize)
-		copy(copyList[1:], node.successorList[firstLiveSuccessor].successorList[:keySize])
-		copyList[0] = node.successorList[firstLiveSuccessor]
+		newSuccessorList := node.successorList[firstLiveSuccessor].successorList
+		copyList := make([]*Node, tableSize)
+		if newSuccessorList[0] != node.successorList[firstLiveSuccessor] {
+			copy(copyList[1:], newSuccessorList)
+			copyList[0] = node.successorList[firstLiveSuccessor]
+		} else {
+			copy(copyList, newSuccessorList)
+		}
 		node.successorList = copyList
 	}
-
 }
 
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
 func CreateNodeAndJoin(identifier int, joinNode *Node) (newNode *Node) {
 	node := Node{
-		identifier: identifier,
+		Identifier: identifier,
 	}
 	if joinNode == nil {
 		node.create()

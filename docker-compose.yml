@@ -1,15 +1,22 @@
-version: '2'
+version: '3'
 
 services:
-  node-0:
-    image: chord
+  rootnode:
+    image: golang
     networks:
       - chord-network
     ports:
-      - 8090:8090/udp
-  nodes:
-     image: chord
-     networks:
-       - chord-network
-     ports:
-       - 8091:8091/udp
+      - 8080
+    tty: true
+  node:
+    image: golang
+    networks:
+      - chord-network
+    ports:
+      - 8081
+    depends_on:
+      - rootnode
+    tty: true
+
+networks:
+  chord-network:
