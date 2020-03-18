@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  rootnode:
+    image: golang
+    networks:
+      - chord-network
+    ports:
+      - 8080
+    tty: true
+  node:
+    image: golang
+    networks:
+      - chord-network
+    ports:
+      - 8081
+    depends_on:
+      - rootnode
+    tty: true
+
+networks:
+  chord-network:
