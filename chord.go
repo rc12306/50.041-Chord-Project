@@ -83,34 +83,28 @@ func main() {
 
 	fmt.Print(">>>")
 
+	// Main CLI
 	for {
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
 		input := scanner.Text()
-
 		if err := scanner.Err(); err != nil {
 			os.Exit(1)
 		}
-
 		inputs := strings.Split(input, " ")
 
 		if inputs[0] != "" {
 			switch inputs[0] {
 
-			// CREATE A NODE
-			case "c":
+			case "c": // CREATE A NODE
 				node = chord.CreateNodeAndJoin(ID, nil)
 				node.PrintNode()
-
-				message := "Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "."
-				fmt.Print(message + "\n>>>")
+				fmt.Print("Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
 				// Step 1: Wait for connections.
 
-			// PRINT NODE DATA
-			case "p":
+			case "p": // PRINT NODE DATA
 				if node.Identifier == -1 {
-					fmt.Println("Invalid node.")
-					fmt.Print("\n>>>")
+					fmt.Println("Invalid node.\n>>>")
 					break
 				}
 
@@ -118,10 +112,9 @@ func main() {
 				fmt.Print("\n>>>")
 				// (Still waiting for connection.)
 
-			// JOIN A NETWORK
-			case "j":
+			case "j": // JOIN A NETWORK
 				if len(inputs) <= 1 {
-					fmt.Print("Missing Variable(s)" + "\n>>>")
+					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
 
@@ -135,52 +128,42 @@ func main() {
 				// Step 2: Request for successor list from successor IP. | Receive successor list and predecessor.
 				// Step 3: Process own information (successor list and predecessor).
 
-				message := "Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". "
-				message2 := "remoteNode is " + fmt.Sprint(remoteNode_ID) + "."
-				fmt.Print(message + message2 + "\n>>>")
+				fmt.Print("Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". remoteNode is " + fmt.Sprint(remoteNode_ID) + "." + "\n>>>")
 				// Step 4: Wait for connections.
 
-			// LEAVE A NETWORK
-			case "l":
+			case "l": // LEAVE A NETWORK
 				if node.Identifier == -1 {
-					fmt.Println("Invalid node.")
-					fmt.Print("\n>>>")
+					fmt.Println("Invalid node.\n>>>")
 					break
 				}
 
 				node = &newNode
-				message := "Left chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "."
-				fmt.Print(message + "\n>>>")
+				fmt.Print("Left chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
 
-			// FIND A FILE BY FILENAME
-			case "f":
+			case "f": // FIND A FILE BY FILENAME
 				if node.Identifier == -1 {
-					fmt.Println("Invalid node.")
-					fmt.Print("\n>>>")
+					fmt.Println("Invalid node.\n>>>")
 					break
 				}
 
 				if len(inputs) <= 1 {
-					fmt.Print("Missing Variable(s)" + "\n>>>")
+					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
-				message := "Node (" + IP_str + ") " + fmt.Sprint(ID) + " "
-				inputs = inputs[1:]
-				message2 := "searching for: \n"
-				fmt.Print(message + message2)
+				fmt.Print("Node (" + IP_str + ") " + fmt.Sprint(ID) + " searching for: \n")
 
+				inputs = inputs[1:]
 				filename := strings.Join(inputs, " ")
 				filename_hash := fmt.Sprint(hash(filename))
 				fmt.Print("	" + filename + " (" + filename_hash + ")")
 
 				// Step 1: Check own hash table.
-				// Step 2: Forward query. | Obtain query.
+				// Step 2: Forward query. | cObtain query.
 				// (Still waiting for connection.)
 				fmt.Print("\n>>>")
 
 			default:
-				message := "Invalid input."
-				fmt.Print(message + "\n>>>")
+				fmt.Println("Invalid input.\n>>>")
 			}
 		} else {
 			fmt.Print(">>>")
