@@ -110,18 +110,18 @@ func main() {
 
 				if len(inputs) <= 1 {
 					fmt.Print("Missing Variable(s)" + "\n>>>")
-				} else {
-
-					remoteNode_IP_str := inputs[1]
-					remoteNode_ID := hash(fmt.Sprint(ip2Long(remoteNode_IP_str)))
-
-					//node := chord.CreateNodeAndJoin(ID, remoteNode_ID) //Don't know the node. Only knows IP
-					//node.PrintNode()
-
-					message := "Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". "
-					message2 := "remoteNode is " + fmt.Sprint(remoteNode_ID) + "."
-					fmt.Print(message + message2 + "\n>>>")
+					break
 				}
+
+				remoteNode_IP_str := inputs[1]
+				remoteNode_ID := hash(fmt.Sprint(ip2Long(remoteNode_IP_str)))
+
+				//node := chord.CreateNodeAndJoin(ID, remoteNode_ID) //Don't know the node. Only knows IP
+				//node.PrintNode()
+
+				message := "Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". "
+				message2 := "remoteNode is " + fmt.Sprint(remoteNode_ID) + "."
+				fmt.Print(message + message2 + "\n>>>")
 
 			case "l":
 
@@ -132,16 +132,17 @@ func main() {
 
 				if len(inputs) <= 1 {
 					fmt.Print("Missing Variable(s)" + "\n>>>")
-				} else {
-					message := "Node (" + IP_str + ") " + fmt.Sprint(ID) + " "
-					inputs = inputs[1:]
-					message2 := "searching for: \n"
-					fmt.Print(message + message2)
-
-					filename := strings.Join(inputs, " ")
-					filename_hash := fmt.Sprint(hash(filename))
-					fmt.Print("	" + filename + " (" + filename_hash + ")\n>>>")
+					break
 				}
+				message := "Node (" + IP_str + ") " + fmt.Sprint(ID) + " "
+				inputs = inputs[1:]
+				message2 := "searching for: \n"
+				fmt.Print(message + message2)
+
+				filename := strings.Join(inputs, " ")
+				filename_hash := fmt.Sprint(hash(filename))
+				fmt.Print("	" + filename + " (" + filename_hash + ")\n>>>")
+
 			default:
 				message := "Invalid input."
 				fmt.Print(message + "\n>>>")
