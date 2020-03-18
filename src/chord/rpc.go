@@ -22,8 +22,8 @@ func (node *Node) SetSuccessorID(id []byte) error {
 }
 
 // FindSuccessor finds sucessor of id of remote node through RPC?
-func (node *Node) FindSuccessor(id []byte) (*Node, error) {
-	return &Node{}, errors.New("Unimplemented function FindSucessor()")
+func (node *Node) FindSuccessor(id int) (*Node, error) {
+	return node.findSuccessor(id)
 }
 
 // Notify notifies remote node that portential thinks it may be the new predecessor of it through RPC?

@@ -13,7 +13,7 @@ const checkPredUpdateRate = 100 * time.Millisecond
 
 // Node refers to Chord Node
 type Node struct {
-	identifier    int
+	Identifier    int
 	predecessor   *Node
 	fingerTable   []*Node
 	successorList []*Node
@@ -34,7 +34,7 @@ func (node *Node) create() error {
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *Node) error {
 	node.predecessor = nil
-	successor, err := remoteNode.findSuccessor(node.identifier)
+	successor, err := remoteNode.findSuccessor(node.Identifier)
 	if err != nil {
 		return err
 	}
@@ -47,10 +47,10 @@ func (node *Node) join(remoteNode *Node) error {
 
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *Node) {
-	if node.predecessor == nil || Between(remoteNode.identifier, node.predecessor.identifier, node.identifier) {
+	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
 		if remoteNode != node {
 			node.predecessor = remoteNode
-			node.TransferKeys(remoteNode, remoteNode.identifier, node.identifier)
+			node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
 		}
 	}
 }
@@ -73,7 +73,7 @@ func (node *Node) stabilise() {
 		select {
 		case <-ticker.C:
 			x := node.successorList[0].predecessor
-			if x != nil && (Between(x.identifier, node.identifier, node.successorList[0].identifier) || node == node.successorList[0]) {
+			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node == node.successorList[0]) {
 				node.successorList[0] = x
 			}
 			node.successorList[0].notify(node)
@@ -101,10 +101,10 @@ func (node *Node) fixFingers() {
 		case <-ticker.C:
 			// updateFinger
 			nextNode := int(math.Pow(2, float64(next)))
-			closestSuccessor, _ := node.findSuccessor((node.identifier + nextNode) % ringSize)
+			closestSuccessor, _ := node.findSuccessor((node.Identifier + nextNode) % ringSize)
 			node.fingerTable[next] = closestSuccessor
-			if node.identifier == 51 {
-				// fmt.Println((node.identifier+nextNode)%ringSize, node.fingerTable[next].identifier, closestSuccessor.identifier)
+			if node.Identifier == 51 {
+				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
 			}
 			next = (next + 1) % tableSize
 		case <-node.stop:
@@ -137,7 +137,7 @@ func (node *Node) checkPredecessor() {
 
 // find successor of node/key with identifier id i.e. smallest node with identifier >= id
 func (node *Node) findSuccessor(id int) (*Node, error) {
-	if BetweenRightIncl(id, node.identifier, node.successorList[0].identifier) {
+	if BetweenRightIncl(id, node.Identifier, node.successorList[0].Identifier) {
 		return node.successorList[0], nil
 	}
 	// get closest preceding node to id in the finger table of this node
@@ -161,7 +161,7 @@ func (node *Node) findClosestPredecessor(id int) (*Node, error) {
 	closestPred := node
 	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
-		if fingerEntry != nil && Between(fingerEntry.identifier, node.identifier, id) {
+		if fingerEntry != nil && Between(fingerEntry.Identifier, node.Identifier, id) {
 			closestPred = fingerEntry
 			break
 		}
@@ -169,8 +169,8 @@ func (node *Node) findClosestPredecessor(id int) (*Node, error) {
 	for i := len(node.successorList) - 1; i >= 0; i-- {
 		successorListEntry := node.successorList[i]
 		if successorListEntry != nil &&
-			successorListEntry.identifier > closestPred.identifier &&
-			Between(successorListEntry.identifier, node.identifier, id) {
+			successorListEntry.Identifier > closestPred.Identifier &&
+			Between(successorListEntry.Identifier, node.Identifier, id) {
 			closestPred = successorListEntry
 			break
 		}
@@ -202,7 +202,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
 func CreateNodeAndJoin(identifier int, joinNode *Node) (newNode *Node) {
 	node := Node{
-		identifier: identifier,
+		Identifier: identifier,
 	}
 	if joinNode == nil {
 		node.create()

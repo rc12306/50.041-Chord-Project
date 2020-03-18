@@ -37,38 +37,39 @@ func BetweenLeftIncl(nodeX, nodeA, nodeB int) bool {
 	return nodeX >= nodeA && nodeX < nodeB
 }
 
-func hash(key string) int {
+// Hash provides the SHA-1 hashing required to get the identifiers for nodes and keys
+func Hash(key string) int {
 	hash := sha1.New()
 	hash.Write([]byte(key))
 	result := hash.Sum(nil)
-	return int(binary.BigEndian.Uint64(result))
+	return int(binary.BigEndian.Uint64(result) % ringSize)
 }
 
 // PrintNode prints the node info in a formatted way
 func (node *Node) PrintNode() {
 	print := "=========================================================\n"
-	print += "Identifier: " + strconv.Itoa(node.identifier) + "\n"
+	print += "Identifier: " + strconv.Itoa(node.Identifier) + "\n"
 	if node.predecessor == nil {
 		print += "Predecessor: nil \n"
 	} else {
-		print += "Predecessor: " + strconv.Itoa(node.predecessor.identifier) + "\n"
+		print += "Predecessor: " + strconv.Itoa(node.predecessor.Identifier) + "\n"
 	}
-	print += "Successor: " + strconv.Itoa(node.successorList[0].identifier) + "\n"
+	print += "Successor: " + strconv.Itoa(node.successorList[0].Identifier) + "\n"
 	print += "Successor List: "
 	for _, successor := range node.successorList {
 		if successor != nil {
-			print += strconv.Itoa(successor.identifier) + ", "
+			print += strconv.Itoa(successor.Identifier) + ", "
 		}
 	}
 	print += "\nFinger Table: "
 	for _, finger := range node.fingerTable {
 		if finger != nil {
-			print += strconv.Itoa(finger.identifier) + ", "
+			print += strconv.Itoa(finger.Identifier) + ", "
 		}
 	}
 	print += "\nHash Table:\n"
 	for key, value := range node.hashTable {
-		keyIdentifier := hash(key)
+		keyIdentifier := Hash(key)
 		print += "\t" + key + " (" + strconv.Itoa(keyIdentifier) + "): " + value + "\n"
 	}
 	print += "\n========================================================="
