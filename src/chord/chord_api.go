@@ -2,12 +2,13 @@ package chord
 
 import (
 	"fmt"
-	"errors"
+	"strconv"
+	// "errors"
 	"log"
 	// need both net and net/rpc because node acts as sender and receiver
-	"net"
+	// "net"
 	"net/rpc"
-	"time"
+	// "time"
 )
 
 /*
@@ -18,9 +19,9 @@ import (
 	clientIP:	client port
 */
 type Packet struct {
-	packetType 	string 
-	msg 		int
-	senderIP 	string
+	PacketType 	string 
+	Msg 		string
+	SenderIP 	string
 	// senderPort 	string
 }
 
@@ -32,24 +33,25 @@ type Listener int
 */
 func (l *Listener) Receive(payload *Packet, reply *Packet) error{
 	// Check what packet type it is
-	switch packetType := payload.packetType; packetType{
+	switch packetType := payload.PacketType; packetType{
 	case "ping":
-		fmt.Println("Receive ping from " + payload.senderIP)
+		fmt.Println("Receive ping from " + payload.SenderIP)
 		// reply to ping
-		*reply = Packet{"pong", 1, ""}
+		*reply = Packet{"pong", "alive", ""}
 		return nil
 	case "pong":
-		fmt.Println("Receive pong from " + payload.senderIP)
+		fmt.Println("Receive pong from " + payload.SenderIP)
 		// no reply
 		// *reply = Packet{"",0,""}
 		return nil
 	case "query":
+		fmt.Println("Receive query from " + payload.SenderIP)
 		// call node file to do the search
-		node := query(payload.msg)
-		*reply = Packet{"answer",node,""}
+		// node := query(payload.Msg)
+		// *reply = Packet{"answer",node,""}
 		return nil
 	case "answer":
-		fmt.Printf("File is in node %d", payload.msg)
+		fmt.Printf("File is in node %d", payload.Msg)
 		// no reply
 		// *reply = Packet{"",0,""}
 		return nil
@@ -66,16 +68,16 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error{
 		senderIP: 	sender IP (will it be given in node.go?)
 		receiverIP:	receiver IP (must be given by node.go)
 */
-func ping(senderIP string, receiverIP string){
+func (node *Node) ping(senderIP string, receiverIP string){
 	// try to handshake with other node
-	client, err := rpc.Dial("tcp", receiverIP + ":1234")
+	client, err := rpc.Dial("tcp", receiverIP + ":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
 		log.Fatal("Dialing:", err)
 	}
 
 	// Set up arguments
-	payload := &Packet{"ping",0,senderIP}
+	payload := &Packet{"ping","Are you alive?",senderIP}
 	var reply Packet
 
 	// and make an rpc call
@@ -84,7 +86,7 @@ func ping(senderIP string, receiverIP string){
 		log.Fatal("Connection error:", err)
 	}
 
-	fmt.Println(reply.senderIP + " is alive. ")
+	fmt.Println(reply.SenderIP + " is alive. ")
 
 }
 
@@ -103,20 +105,25 @@ func pong(){
 */
 func query(id int) int {
 	// search closest successor
-	closestPred, _ := findSuccessor(id)
+	closestPred, _ := FindSuccessor(id)
 	return closestPred.identifier
+}
+
+
+func querySuccessorList(){
+
 }
 
 func handleQuery(id int, closestPredIP string) int{
 	// query closest predecessor
 	// get closestPred IP
-	client, err := rpc.Dial("tcp", closestPredIP + ":1234")
+	client, err := rpc.Dial("tcp", closestPredIP + ":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)
 	}
 
 	// set up arguments
-	payload := &Packet{"query", id, senderIP}
+	payload := &Packet{"query", string(id), ".0.0.0.0"}
 	var reply Packet
 
 	// and make an rpc call
@@ -125,8 +132,9 @@ func handleQuery(id int, closestPredIP string) int{
 		log.Fatal("Connection error:", err)
 	}
 
-	// fmt.Println("File is in node " + reply.msg)
-	return reply.msg
+	// fmt.Println("File is in node " + reply.Msg)
+	ans, _ := strconv.Atoi(reply.Msg)
+	return ans
 }
 
 /*
@@ -136,39 +144,3 @@ func handleQuery(id int, closestPredIP string) int{
 func answer(){
 
 }
-
-/*
-func main() {
-	addy, err := net.ResolveTCPAddr("tcp", "0.0.0.0:1234")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Println("IP address: ")
-	inbound, err := net.ListenTCP("tcp", addy)
-	
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	listener := new(Listener)
-	rpc.Register(listener)
-	rpc.Accept(inbound)
-
-	// Client
-	client, err := rpc.Dial("tcp", "localhost:1234")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	newpacket := Packet{"ping",0,"0.0.0.0"}
-	var reply Packet
-
-	err = client.Call("Listener.Recevie", newpacket, &reply)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	log.Printf("Reply: Type: %s, msg: %d, IP: %s", reply.packetType, reply.msg, reply.senderIP)
-}
-*/
