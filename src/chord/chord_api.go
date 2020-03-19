@@ -55,17 +55,17 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	// Check what packet type it is
 	switch packetType := payload.PacketType; packetType {
 	case "ping":
-		fmt.Println("Receive ping from " + payload.SenderIP)
+		// fmt.Println("Receive ping from " + payload.SenderIP)
 		// reply to ping
 		*reply = Packet{"pong", "alive", nil, ChordNode.IP}
 		// *reply = Packet{"pong", "alive", nil, "127.0.0.1"}
 		return nil
 	case "pong":
-		fmt.Println("Receive pong from " + payload.SenderIP)
+		// fmt.Println("Receive pong from " + payload.SenderIP)
 		// no action needed
 		return nil
 	case "query":
-		fmt.Println("Receive query from " + payload.SenderIP)
+		// fmt.Println("Receive query from " + payload.SenderIP)
 		// Change the hash from string to int
 		key, _ := strconv.Atoi(payload.Msg)
 		// Call node to do the search
@@ -74,7 +74,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		*reply = Packet{"answer", string(node.Identifier), []*RemoteNode{node}, ChordNode.IP}
 		return nil
 	case "answer":
-		fmt.Println("File is in node ", payload.Msg)
+		// fmt.Println("File is in node ", payload.Msg)
 		// no action needed
 		return nil
 	case "getSuccesorList":
@@ -123,7 +123,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 */
 func (node *Node) Ping(receiverIP string) bool {
 	// try to handshake with other node
-	fmt.Println("Ping")
+	// fmt.Println("Ping")
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
@@ -142,7 +142,7 @@ func (node *Node) Ping(receiverIP string) bool {
 		log.Fatal("Connection error:", err)
 		return false
 	}
-	fmt.Println(reply.SenderIP + " is alive. ")
+	// fmt.Println(reply.SenderIP + " is alive. ")
 	client.Close()
 	return true
 }
@@ -239,7 +239,7 @@ func handleQuerySuccesorList() []*RemoteNode {
 	return predecessor
 */
 func (node *Node) QueryPredecessor(receiverIP string) []*RemoteNode {
-	fmt.Println("IP to query " + receiverIP)
+	// fmt.Println("IP to query " + receiverIP)
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)

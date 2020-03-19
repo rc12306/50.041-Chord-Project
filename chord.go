@@ -3,7 +3,7 @@ package main
 import (
 	"bufio"
 	"chord/src/chord"
-	"crypto/sha1"     //hash()
+	// "crypto/sha1"     //hash()
 	"encoding/binary" //ip2int()
 	"fmt"
 	"log" //GetOutboundIP()
@@ -22,17 +22,17 @@ var LISTENING_PORT int = 8081
 /* --------------------------------DEPENDENCIES-----------------------*/
 
 // Get preferred outbound ip of this machine as net.IP
-func GetOutboundIP() string {
-	conn, err := net.Dial("udp", "8.8.8.8:80")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer conn.Close()
+// func GetOutboundIP() string {
+// 	conn, err := net.Dial("udp", "8.8.8.8:80")
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	defer conn.Close()
 
-	localAddr := conn.LocalAddr().(*net.UDPAddr)
+// 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
-	return localAddr.IP.String()
-}
+// 	return localAddr.IP.String()
+// }
 
 // convert net.IP to int
 func ip2int(ip net.IP) uint32 {
@@ -50,68 +50,48 @@ func ip2Long(ip string) uint32 {
 }
 
 // hash a string into int
-func hash(key string) int {
-	hash := sha1.New()
-	hash.Write([]byte(key))
-	result := hash.Sum(nil)
-	return int(binary.BigEndian.Uint64(result))
-}
+// func hash(key string) int {
+// 	hash := sha1.New()
+// 	hash.Write([]byte(key))
+// 	result := hash.Sum(nil)
+// 	return int(binary.BigEndian.Uint64(result))
+// }
 
 // LISTEN
-func node_listen(port int, quit_listen chan bool) {
+func node_listen(hostIP string) {
+	// defer wg.Done()
+	// log.Println("Server started")
+	addy, err := net.ResolveTCPAddr("tcp", hostIP+":8081")
+	if err != nil {
+		log.Fatal(err)
+	}
+	// log.Println("IP address: " + addy.String())
+	inbound, err := net.ListenTCP("tcp", addy)
 
-	for {
-		select {
-		case <-quit_listen:
-			return
-		default:
-
-			addy, err := net.ResolveTCPAddr("tcp", "0.0.0.0:"+fmt.Sprint(port))
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Println("IP address: ")
-			inbound, err := net.ListenTCP("tcp", addy)
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			listener := new(chord.Listener)
-			rpc.Register(listener)
-			rpc.Accept(inbound)
-			fmt.Println("Accepted")
-
-		}
+	if err != nil {
+		log.Fatal(err)
 	}
 
+	listener := new(chord.Listener)
+	rpc.Register(listener)
+	rpc.Accept(inbound)
+	return
 }
 
 /* --------------------------------DEPENDENCIES-----------------------*/
 
 func main() {
 
-	// Init USER IP info
-	// IP := GetOutboundIP()
-	// IP_str := GetOutboundIP().String()
-	// IP_int := ip2int(IP)
-	// ID := hash(fmt.Sprint(IP_int))
-
-	IP := GetOutboundIP()
-	IP_str := IP
-	IP_int := ip2Long(IP)
-	ID := hash(fmt.Sprint(IP_int))
-
-	// IP_str := "192.168.1.126"
-	// IP_int := ip2Long(IP_str)
-	// ID := hash(fmt.Sprint(IP_int))
+	// Init USER IP infos
+	IP := chord.GetOutboundIP()       //String of IP
+	IP_str := fmt.Sprint(ip2Long(IP)) //String of decimal IP
+	ID := chord.Hash(IP_str)          //Hashed decimal IP
 
 	chord.ChordNode = &chord.Node{
 		Identifier: -1,
+		Stop:       make(chan bool),
 	}
-	// node := chord.ChordNode
 
-	// Intro Message
 	fmt.Println(
 		`
 		Welcome to CHORD!
@@ -122,13 +102,9 @@ func main() {
 		Leave 	l     		: Leave the current chord network.
 		Find	f <fname>	: Find a file.
 		
-		Your IP is : ` + IP_str)
-
+		Your IP is : ` + IP)
 	fmt.Print(">>>")
 
-	quit_listen := make(chan bool)
-
-	// Main CLI
 	for {
 		scanner := bufio.NewScanner(os.Stdin)
 		scanner.Scan()
@@ -151,10 +127,9 @@ func main() {
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
 				chord.ChordNode.CreateNodeAndJoin(nil)
-				chord.ChordNode.PrintNode()
-				fmt.Print("Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ".")
+				fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
 
-				// go node_listen(LISTENING_PORT, quit_listen)
+				go node_listen(IP)
 
 				fmt.Print("\n>>>")
 
@@ -179,19 +154,21 @@ func main() {
 					break
 				}
 
-				remoteNode_IP_str := inputs[1]
-				remoteNode_IP := fmt.Sprint(ip2Long(remoteNode_IP_str))
-				remoteNode_ID := hash(remoteNode_IP)
+				remoteNode_IP := inputs[1]                              //String of IP
+				remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+				remoteNode_ID := chord.Hash(remoteNode_IP_str)          //Hash of decimal IP
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
-					IP:         remoteNode_IP_str,
+					IP:         remoteNode_IP,
 				}
+				chord.ChordNode.IP = IP
+				chord.ChordNode.Identifier = ID
 				chord.ChordNode.CreateNodeAndJoin(remoteNode)
 
-				fmt.Println("remoteNode is (" + remoteNode_IP_str + ") " + fmt.Sprint(remoteNode_ID) + ".")
-				fmt.Println("Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". ")
+				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
 
-				// go node_listen(LISTENING_PORT, quit_listen)
+				go node_listen(IP)
 
 				fmt.Print("\n>>>")
 
@@ -200,11 +177,10 @@ func main() {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
-
-				quit_listen <- true
-
+				chord.ChordNode.Stop <- true
+				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
-				fmt.Print("Left chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
+				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
 
 			case "f": // FIND A FILE BY FILENAME
 				if chord.ChordNode.Identifier == -1 {
@@ -216,11 +192,11 @@ func main() {
 					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
-				fmt.Print("Node (" + IP_str + ") " + fmt.Sprint(ID) + " searching for: \n")
+				fmt.Print("Node (" + IP + ") " + fmt.Sprint(ID) + " searching for: \n")
 
 				inputs = inputs[1:]
 				filename := strings.Join(inputs, " ")
-				filename_hash := fmt.Sprint(hash(filename))
+				filename_hash := fmt.Sprint(chord.Hash(filename))
 				fmt.Print("	" + filename + " (" + filename_hash + ")")
 
 				// Step 1: Check own hash table.
