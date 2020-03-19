@@ -49,6 +49,7 @@ func Hash(key string) int {
 func (node *Node) PrintNode() {
 	print := "=========================================================\n"
 	print += "Identifier: " + strconv.Itoa(node.Identifier) + "\n"
+	print += "IP: " + node.IP + "\n"
 	if node.predecessor == nil {
 		print += "Predecessor: nil \n"
 	} else {

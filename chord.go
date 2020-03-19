@@ -9,6 +9,7 @@ import (
 	"log" //GetOutboundIP()
 	"net" //GetOutboundIP()
 	"os"
+
 	//"time"
 	"bytes" //ip2Long()
 	//"reflect" //testing
@@ -21,7 +22,7 @@ var LISTENING_PORT int = 8081
 /* --------------------------------DEPENDENCIES-----------------------*/
 
 // Get preferred outbound ip of this machine as net.IP
-func GetOutboundIP() net.IP {
+func GetOutboundIP() string {
 	conn, err := net.Dial("udp", "8.8.8.8:80")
 	if err != nil {
 		log.Fatal(err)
@@ -30,7 +31,7 @@ func GetOutboundIP() net.IP {
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
-	return localAddr.IP
+	return localAddr.IP.String()
 }
 
 // convert net.IP to int
@@ -91,15 +92,24 @@ func node_listen(port int, quit_listen chan bool) {
 func main() {
 
 	// Init USER IP info
+	// IP := GetOutboundIP()
+	// IP_str := GetOutboundIP().String()
+	// IP_int := ip2int(IP)
+	// ID := hash(fmt.Sprint(IP_int))
+
 	IP := GetOutboundIP()
-	IP_str := GetOutboundIP().String()
-	IP_int := ip2int(IP)
+	IP_str := IP
+	IP_int := ip2Long(IP)
 	ID := hash(fmt.Sprint(IP_int))
 
-	var newNode chord.Node = chord.Node{
+	// IP_str := "192.168.1.126"
+	// IP_int := ip2Long(IP_str)
+	// ID := hash(fmt.Sprint(IP_int))
+
+	chord.ChordNode = &chord.Node{
 		Identifier: -1,
 	}
-	node := &newNode
+	// node := chord.ChordNode
 
 	// Intro Message
 	fmt.Println(
@@ -133,29 +143,31 @@ func main() {
 
 			case "c": // CREATE A NODE
 
-				if node.Identifier != -1 {
+				if chord.ChordNode.Identifier != -1 {
 					fmt.Print("Node already exists.\n>>>")
 					break
 				}
 
-				node = chord.CreateNodeAndJoin(ID, IP_str, "")
-				node.PrintNode()
+				chord.ChordNode.IP = IP
+				chord.ChordNode.Identifier = ID
+				chord.ChordNode.CreateNodeAndJoin(nil)
+				chord.ChordNode.PrintNode()
 				fmt.Print("Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
 
-				go node_listen(LISTENING_PORT, quit_listen)
+				// go node_listen(LISTENING_PORT, quit_listen)
 
 			case "p": // PRINT NODE DATA
-				if node.Identifier == -1 {
+				if chord.ChordNode.Identifier == -1 {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
 
-				node.PrintNode()
+				chord.ChordNode.PrintNode()
 				fmt.Print("\n>>>")
 
 			case "j": // JOIN A NETWORK
 
-				if node.Identifier != -1 {
+				if chord.ChordNode.Identifier != -1 {
 					fmt.Print("Node already exists.\n>>>")
 					break
 				}
@@ -169,25 +181,25 @@ func main() {
 				remoteNode_IP := fmt.Sprint(ip2Long(remoteNode_IP_str))
 				remoteNode_ID := hash(remoteNode_IP)
 
-				node = chord.CreateNodeAndJoin(ID, IP_str, remoteNode_IP_str)
+				// chord.ChordNode.CreateNodeAndJoin(remoteNode_IP_str)
 
 				fmt.Print("Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". remoteNode is " + fmt.Sprint(remoteNode_ID) + "." + "\n>>>")
 
 				go node_listen(LISTENING_PORT, quit_listen)
 
 			case "l": // LEAVE A NETWORK
-				if node.Identifier == -1 {
+				if chord.ChordNode.Identifier == -1 {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
 
 				quit_listen <- true
 
-				node = &newNode
+				chord.ChordNode.Identifier = -1
 				fmt.Print("Left chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
 
 			case "f": // FIND A FILE BY FILENAME
-				if node.Identifier == -1 {
+				if chord.ChordNode.Identifier == -1 {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
@@ -204,7 +216,7 @@ func main() {
 				fmt.Print("	" + filename + " (" + filename_hash + ")")
 
 				// Step 1: Check own hash table.
-				// Step 2: Forward query. | cObtain query.
+				// Step 2: Forward query. | Obtain query.
 				// (Still waiting for connection.)
 
 				fmt.Print("\n>>>")
