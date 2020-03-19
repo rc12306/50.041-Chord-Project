@@ -37,7 +37,7 @@ func main() {
 	fmt.Println("Key 'hello' with value 'world' has been saved into Node", successor.Identifier)
 	// successor.PrintNode()
 	fmt.Println("Getting value of key 'hello'...")
-	nodeOfKey, _ := nodeA.FindSuccessor(ans)
+	nodeOfKey, _ := nodeA.findSuccessor(ans)
 	value, _ := nodeOfKey.Get("hello")
 	fmt.Println("Value of key 'hello' is '" + value + "'")
 	var input string
