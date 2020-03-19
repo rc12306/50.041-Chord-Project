@@ -194,19 +194,17 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 }
 
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
-func CreateNodeAndJoin(identifier int, IP string, joinIP string) (newNode *Node) {
-	node := Node{
-		Identifier: identifier,
-		IP:         IP,
-	}
-	if joinIP == "" {
-		node.create()
+func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) {
+	if node.IP == "" {
+		fmt.Println("IP of node has not been set")
 	} else {
-		joinNode := &RemoteNode{Identifier: identifier, IP: joinIP}
-		node.join(joinNode)
+		if joinNode == nil {
+			node.create()
+		} else {
+			node.join(joinNode)
+		}
+		go node.stabilise()
+		go node.fixFingers()
+		go node.checkPredecessor()
 	}
-	go node.stabilise()
-	go node.fixFingers()
-	go node.checkPredecessor()
-	return &node
 }
