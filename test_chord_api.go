@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"strconv"
+
 	// "errors"
 	"log"
 	// need both net and net/rpc because node acts as sender and receiver
@@ -10,19 +12,18 @@ import (
 	"net/rpc"
 	"sync"
 	"time"
-	// "context"
 )
 
 var wg sync.WaitGroup
 
 func server() {
 	defer wg.Done()
-	fmt.Println("Server started")
-	addy, err := net.ResolveTCPAddr("tcp", "0.0.0.0:8081")
+	log.Println("Server started")
+	addy, err := net.ResolveTCPAddr("tcp", "localhost:8081")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("IP address: ")
+	log.Println("IP address: " + addy.String())
 	inbound, err := net.ListenTCP("tcp", addy)
 
 	if err != nil {
@@ -32,82 +33,107 @@ func server() {
 	listener := new(chord.Listener)
 	rpc.Register(listener)
 	rpc.Accept(inbound)
-	fmt.Println("Accepted")
+	return
 
 }
 
-func client() {
+func client(testNumber int) {
 	defer wg.Done()
-	fmt.Println("Client started")
-	client, err := rpc.Dial("tcp", "localhost:8081")
-	if err != nil {
-		log.Fatal(err)
+	log.Println("Client started")
+	switch testNumber {
+	case 1:
+		log.Println("Test ping localhost:8081")
+		alive := strconv.FormatBool(chord.ChordNode.Ping("localhost"))
+		log.Println("Reply from localhost " + alive)
+	case 2:
+		log.Println("Test pong localhost:8081")
+		client, err := rpc.Dial("tcp", "localhost:8081")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		newpacket2 := chord.Packet{"pong", "Yes", nil, "127.0.0.1"}
+		var reply2 chord.Packet
+
+		err = client.Call("Listener.Receive", newpacket2, &reply2)
+		if err != nil {
+			fmt.Println("Pong error")
+			log.Fatal(err)
+		}
+		// Reply should be a blank packet
+		log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply2.PacketType, reply2.Msg, reply2.SenderIP)
+
+		client.Close()
+	case 3:
+		log.Println("Test query 100 from localhost")
+		node := chord.ChordNode.Query(100, "localhost")
+		log.Printf("File/ Successor is found in node %s, with IP %s", node.Identifier, node.IP)
+	case 4:
+		log.Println("Test answer localhost:8081")
+		client, err := rpc.Dial("tcp", "localhost:8081")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		newpacket4 := chord.Packet{"answer", "1", []*chord.RemoteNode{{1, "1.2.3.4"}}, "127.0.0.1"}
+		var reply4 chord.Packet
+
+		err = client.Call("Listener.Receive", newpacket4, &reply4)
+		if err != nil {
+			log.Fatal(err)
+			fmt.Println("error")
+		}
+		// Reply should be a blank packet
+		log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply4.PacketType, reply4.Msg, reply4.SenderIP)
+		client.Close()
+	case 5:
+		log.Println("Test query predecessor from localhost")
+		nodeList := chord.ChordNode.QueryPredecessor("localhost")
+		for i, node := range nodeList {
+			log.Printf("%d: Found node %s, with IP %s", i, node.Identifier, node.IP)
+		}
+	case 6:
+		log.Println("Test query predecessor from localhost")
+		nodeList := chord.ChordNode.QuerySuccessorList("localhost")
+		for i, node := range nodeList {
+			log.Printf("%d: Found node %s, with IP %s", i, node.Identifier, node.IP)
+		}
+	case 7:
+		log.Println("Test others localhost:8081")
+		client, err := rpc.Dial("tcp", "localhost:8081")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		newpacket5 := chord.Packet{"others", "blah", nil, "0.0.0.0"}
+		var reply5 chord.Packet
+
+		err = client.Call("Listener.Receive", newpacket5, &reply5)
+		if err != nil {
+			log.Fatal(err)
+			fmt.Println("error")
+		}
+
+		log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply5.PacketType, reply5.Msg, reply5.SenderIP)
+	default:
+		return
 	}
-
-	newpacket1 := chord.Packet{"ping", "Are you alive?", nil, "0.0.0.0"}
-	var reply1 chord.Packet
-
-	err = client.Call("Listener.Receive", newpacket1, &reply1)
-	if err != nil {
-		log.Fatal(err)
-		fmt.Println("error")
-	}
-
-	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply1.PacketType, reply1.Msg, reply1.SenderIP)
-
-	newpacket2 := chord.Packet{"pong", "Yes", nil, "0.0.0.0"}
-	var reply2 chord.Packet
-
-	err = client.Call("Listener.Receive", newpacket2, &reply2)
-	if err != nil {
-		log.Fatal(err)
-		fmt.Println("error")
-	}
-
-	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply2.PacketType, reply2.Msg, reply2.SenderIP)
-
-	newpacket3 := chord.Packet{"query", "100", nil, "0.0.0.0"}
-	var reply3 chord.Packet
-
-	err = client.Call("Listener.Receive", newpacket3, &reply3)
-	if err != nil {
-		log.Fatal(err)
-		fmt.Println("error")
-	}
-
-	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply3.PacketType, reply3.Msg, reply3.SenderIP)
-
-	newpacket4 := chord.Packet{"answer", "1", nil, "0.0.0.0"}
-	var reply4 chord.Packet
-
-	err = client.Call("Listener.Receive", newpacket4, &reply4)
-	if err != nil {
-		log.Fatal(err)
-		fmt.Println("error")
-	}
-
-	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply4.PacketType, reply4.Msg, reply4.SenderIP)
-
-	newpacket5 := chord.Packet{"others", "blah", nil, "0.0.0.0"}
-	var reply5 chord.Packet
-
-	err = client.Call("Listener.Receive", newpacket5, &reply5)
-	if err != nil {
-		log.Fatal(err)
-		fmt.Println("error")
-	}
-
-	log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply5.PacketType, reply5.Msg, reply5.SenderIP)
-
+	return
 }
 
 func main() {
-	wg.Add(2)
+	wg.Add(5)
+
 	go server()
-	time.Sleep(time.Second * 5)
-	go client()
+	time.Sleep(time.Second * 2)
+	go client(1)
+	time.Sleep(time.Second * 2)
+	go client(2)
+	time.Sleep(time.Second * 2)
+	go client(4)
+	time.Sleep(time.Second * 2)
+	go client(7)
 
 	wg.Wait()
 	fmt.Println("terminating program")
-
 }
