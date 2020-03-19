@@ -16,7 +16,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 
 **Setting up nodes:**
 
-I don't know what these are for but you need these:
+Build the image:
 ```
 docker-compose pull
 ```
@@ -30,12 +30,25 @@ docker-compose up -d --scale node=5
 ```
 This creates 1 root node, and 5 other nodes.
 
-To view all containers, run this command:
+**Viewing containers:**
+
+To view all containers:
 ```
 docker ps
 ```
 
-To view the IP addresses of containers, run this command:
+To view the IP addresses of containers:
 ```
 docker inspect -f '{{.Name}} - {{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker ps -aq)
+```
+
+**Executing .go file in container:**
+
+To enter a container's environment:
+```
+docker exec -it <CONTAINER ID> bash
+```
+Then run the .go file:
+```
+go run <FILE>.go
 ```
