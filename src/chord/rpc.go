@@ -11,12 +11,22 @@ type RemoteNode struct {
 
 // GetSuccessorListRPC gets successor list of remote node through RPC
 func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
-	return ChordNode.QuerySuccessorList(remoteNode.IP)
+	if remoteNode != nil {
+		return ChordNode.QuerySuccessorList(remoteNode.IP)
+	} else {
+		return []*RemoteNode{}
+	}
 }
 
 // GetPredecessorRPC gets predecessor of remote node through RPC
 func (remoteNode *RemoteNode) GetPredecessorRPC() *RemoteNode {
-	return ChordNode.QueryPredecessor(remoteNode.IP)[0]
+	list := ChordNode.QueryPredecessor(remoteNode.IP)
+	if len(list) != 0 {
+		return ChordNode.QueryPredecessor(remoteNode.IP)[0]
+	} else {
+		return nil
+	}
+	// return ChordNode.QueryPredecessor(remoteNode.IP)[0]
 }
 
 // FindSuccessorRPC finds sucessor of id of remote node through RPC
@@ -32,7 +42,11 @@ func (remoteNode *RemoteNode) NotifyRPC(potential *RemoteNode) {
 
 // NoReplyRPC checks if remoteNode is alive
 func (remoteNode *RemoteNode) NoReplyRPC() bool {
-	return ChordNode.Ping(remoteNode.IP)
+	if remoteNode != nil {
+		return ChordNode.Ping(remoteNode.IP)
+	} else {
+		return false
+	}
 }
 
 // GetRPC gets file using hashed file name as key from remote node
