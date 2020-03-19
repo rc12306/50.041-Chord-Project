@@ -272,7 +272,6 @@ func handleQueryPredecessor() *RemoteNode {
 		potentialPred: node that might be the pred of node with receiverIP
 */
 func (node *Node) Notify(receiverIP string, potentialPred *RemoteNode) {
-	fmt.Println("Notify")
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)
