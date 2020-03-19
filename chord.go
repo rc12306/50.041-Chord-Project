@@ -32,7 +32,7 @@ func main() {
 	fmt.Println("\nPutting key 'hello' with value 'world' into distributed table...")
 	ans := chord.Hash("hello")
 	fmt.Println("Hashed key 'hello' has identifier", ans)
-	successor, _ := nodeA.FindSuccessor(ans)
+	successor, _ := nodeA.findSuccessor(ans)
 	successor.Put("hello", "world")
 	fmt.Println("Key 'hello' with value 'world' has been saved into Node", successor.Identifier)
 	// successor.PrintNode()
