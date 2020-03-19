@@ -18,7 +18,7 @@ type Node struct {
 	predecessor   *RemoteNode
 	fingerTable   []*RemoteNode
 	successorList []*RemoteNode
-	stop          chan bool
+	Stop          chan bool
 	fail          bool
 	hashTable     map[string]string
 }
@@ -76,7 +76,7 @@ func (node *Node) stabilise() {
 			}
 			node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			node.updateSuccessorList(0)
-		case <-node.stop:
+		case <-node.Stop:
 			ticker.Stop()
 			return
 		}
@@ -101,7 +101,7 @@ func (node *Node) fixFingers() {
 				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
 			}
 			next = (next + 1) % tableSize
-		case <-node.stop:
+		case <-node.Stop:
 			ticker.Stop()
 			return
 		}
@@ -120,7 +120,7 @@ func (node *Node) checkPredecessor() {
 			if node.predecessor != nil && !node.predecessor.IsAliveRPC() {
 				node.predecessor = nil
 			}
-		case <-node.stop:
+		case <-node.Stop:
 			ticker.Stop()
 			return
 		}

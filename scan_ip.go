@@ -114,8 +114,8 @@ func networkIP() (string, []string) {
 	return basicIP, ipSlice
 }
 
-func main() {
-	myip, ipslice := networkIP()
-	fmt.Println("\n My IP addr: ", myip)
-	fmt.Println("Other IP in network: ", ipslice, "\n")
-}
+// func main() {
+// 	myip, ipslice := networkIP()
+// 	fmt.Println("\n My IP addr: ", myip)
+// 	fmt.Println("Other IP in network: ", ipslice, "\n")
+// }
