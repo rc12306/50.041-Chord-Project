@@ -1,4 +1,8 @@
 # Chord Implementation on Docker
+
+**Command Line Interface**
+![](./CLI.PNG)
+
 **Installing Docker Compose (Linux):**
 1. Run this command to download Docker Compose:
 ```
