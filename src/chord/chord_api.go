@@ -124,8 +124,8 @@ func (node *Node) Ping(receiverIP string) bool {
 	}
 
 	// Set up arguments
-	// payload := &Packet{"ping", "Are you alive?", nil, ChordNode.IP}
-	payload := &Packet{"ping", "Are you alive?", nil, "127.0.0.1"}
+	payload := &Packet{"ping", "Are you alive?", nil, ChordNode.IP}
+	// payload := &Packet{"ping", "Are you alive?", nil, "127.0.0.1"}
 	var reply Packet
 
 	// and make an rpc call
@@ -232,7 +232,7 @@ func handleQuerySuccesorList() []*RemoteNode {
 	return predecessor
 */
 func (node *Node) QueryPredecessor(receiverIP string) []*RemoteNode {
-
+	fmt.Println("IP to query " + receiverIP)
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)

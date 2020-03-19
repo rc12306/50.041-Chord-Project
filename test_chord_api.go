@@ -11,15 +11,14 @@ import (
 	"net"
 	"net/rpc"
 	"sync"
-	"time"
 )
 
 var wg sync.WaitGroup
 
-func server() {
+func server(hostIP string) {
 	defer wg.Done()
 	log.Println("Server started")
-	addy, err := net.ResolveTCPAddr("tcp", "localhost:8081")
+	addy, err := net.ResolveTCPAddr("tcp", hostIP+":8081")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -37,17 +36,17 @@ func server() {
 
 }
 
-func client(testNumber int) {
+func client(testNumber int, receiverIP string) {
 	defer wg.Done()
 	log.Println("Client started")
 	switch testNumber {
 	case 1:
 		log.Println("Test ping localhost:8081")
-		alive := strconv.FormatBool(chord.ChordNode.Ping("localhost"))
+		alive := strconv.FormatBool(chord.ChordNode.Ping(receiverIP))
 		log.Println("Reply from localhost " + alive)
 	case 2:
 		log.Println("Test pong localhost:8081")
-		client, err := rpc.Dial("tcp", "localhost:8081")
+		client, err := rpc.Dial("tcp", receiverIP+":8081")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -65,12 +64,12 @@ func client(testNumber int) {
 
 		client.Close()
 	case 3:
-		log.Println("Test query 100 from localhost")
-		node := chord.ChordNode.Query(100, "localhost")
+		log.Println("Test query 100 from " + receiverIP)
+		node := chord.ChordNode.Query(100, receiverIP)
 		log.Printf("File/ Successor is found in node %s, with IP %s", node.Identifier, node.IP)
 	case 4:
-		log.Println("Test answer localhost:8081")
-		client, err := rpc.Dial("tcp", "localhost:8081")
+		log.Println("Test answer " + receiverIP + ":8081")
+		client, err := rpc.Dial("tcp", receiverIP+":8081")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -87,25 +86,25 @@ func client(testNumber int) {
 		log.Printf("Reply: Type: %s, msg: %s, IP: %s", reply4.PacketType, reply4.Msg, reply4.SenderIP)
 		client.Close()
 	case 5:
-		log.Println("Test query predecessor from localhost")
-		nodeList := chord.ChordNode.QueryPredecessor("localhost")
+		log.Println("Test query predecessor from " + receiverIP)
+		nodeList := chord.ChordNode.QueryPredecessor(receiverIP)
 		for i, node := range nodeList {
 			log.Printf("%d: Found node %s, with IP %s", i, node.Identifier, node.IP)
 		}
 	case 6:
-		log.Println("Test query predecessor from localhost")
-		nodeList := chord.ChordNode.QuerySuccessorList("localhost")
+		log.Println("Test query predecessor from " + receiverIP)
+		nodeList := chord.ChordNode.QuerySuccessorList(receiverIP)
 		for i, node := range nodeList {
 			log.Printf("%d: Found node %s, with IP %s", i, node.Identifier, node.IP)
 		}
 	case 7:
-		log.Println("Test others localhost:8081")
-		client, err := rpc.Dial("tcp", "localhost:8081")
+		log.Println("Test others " + receiverIP + ":8081")
+		client, err := rpc.Dial("tcp", receiverIP+":8081")
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		newpacket5 := chord.Packet{"others", "blah", nil, "0.0.0.0"}
+		newpacket5 := chord.Packet{"others", "blah", nil, "127.0.0.1"}
 		var reply5 chord.Packet
 
 		err = client.Call("Listener.Receive", newpacket5, &reply5)
@@ -124,15 +123,33 @@ func client(testNumber int) {
 func main() {
 	wg.Add(5)
 
-	go server()
-	time.Sleep(time.Second * 2)
-	go client(1)
-	time.Sleep(time.Second * 2)
-	go client(2)
-	time.Sleep(time.Second * 2)
-	go client(4)
-	time.Sleep(time.Second * 2)
-	go client(7)
+	// Find IP in the network
+	myip, ipslice := chord.NetworkIP()
+	fmt.Println("\n My IP addr: ", myip)
+	fmt.Println("Other IP in network: ", ipslice, "\n")
+
+	id := chord.Hash(myip)
+	chord.ChordNode = &chord.Node{
+		Identifier: id,
+		IP:         myip,
+	}
+
+	/*
+		chord.ChordNode.CreateNodeAndJoin(1, nil)
+		fmt.Printf("Node A's id is %d \n", nodeA.Identifier)
+		chord.ChordNode = nodeA
+
+		go server(nodeA.IP)
+		time.Sleep(time.Second * 2)
+
+			go client(1, nodeA.IP)
+			time.Sleep(time.Second * 2)
+			go client(2, nodeA.IP)
+			time.Sleep(time.Second * 2)
+			go client(4, nodeA.IP)
+			time.Sleep(time.Second * 2)
+			go client(7, nodeA.IP)
+	*/
 
 	wg.Wait()
 	fmt.Println("terminating program")
