@@ -8,8 +8,8 @@ import (
 
 const tableSize = 6
 const ringSize = 64
-const fingerTableUpdateRate = 50 * time.Millisecond
-const checkPredUpdateRate = 100 * time.Millisecond
+const fingerTableUpdateRate = 500 * time.Millisecond
+const checkPredUpdateRate = 1000 * time.Millisecond
 
 // Node refers to Chord Node
 type Node struct {

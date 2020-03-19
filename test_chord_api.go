@@ -134,9 +134,18 @@ func main() {
 		IP:         myip,
 	}
 
+	/*
+		id2 := chord.Hash("")
+		other := &chord.RemoteNode{
+			Identifier: id2,
+			IP:         "",
+		}
+	*/
+
 	go server(myip)
 
 	chord.ChordNode.CreateNodeAndJoin(nil)
+	// chord.ChordNode.CreateNodeAndJoin(other)
 	chord.ChordNode.PrintNode()
 
 	/*
