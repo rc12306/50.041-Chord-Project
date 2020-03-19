@@ -117,7 +117,7 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor != nil && node.predecessor.NoReplyRPC() {
+			if node.predecessor != nil && !node.predecessor.ReplyRPC() {
 				node.predecessor = nil
 			}
 		case <-node.stop:
@@ -173,7 +173,8 @@ func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 }
 
 func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
-	if node.successorList[firstLiveSuccessor].NoReplyRPC() {
+	// fmt.Println(node.successorList, firstLiveSuccessor)
+	if !node.successorList[firstLiveSuccessor].ReplyRPC() {
 		firstLiveSuccessor++
 		if firstLiveSuccessor == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -181,12 +182,18 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
+		// fmt.Println("entering else")
+		// fmt.Println(node.successorList, firstLiveSuccessor)
+		// fmt.Println("Get successor List")
 		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
-		if newSuccessorList[0] != node.successorList[firstLiveSuccessor] {
+
+		// fmt.Println(newSuccessorList, node.successorList, firstLiveSuccessor)
+		if newSuccessorList[0].IP != node.successorList[firstLiveSuccessor].IP {
 			copy(copyList[1:], newSuccessorList)
 			copyList[0] = node.successorList[firstLiveSuccessor]
 		} else {
+			// fmt.Println("Else")
 			copy(copyList, newSuccessorList)
 		}
 		node.successorList = copyList
