@@ -1,5 +1,7 @@
 package chord
 
+import "fmt"
+
 // structure not developed yet: look at grpc or golang's native net/rpc??
 // methods that are available for remote access must be of the form "func (t *T) MethodName(argType T1, replyType *T2) error"
 
@@ -11,6 +13,9 @@ type RemoteNode struct {
 
 // GetSuccessorListRPC gets successor list of remote node through RPC
 func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
+	// x := ChordNode.QuerySuccessorList(remoteNode.IP)
+	// fmt.Println("get x?")
+	// fmt.Println(x)
 	if remoteNode != nil {
 		return ChordNode.QuerySuccessorList(remoteNode.IP)
 	} else {
@@ -21,9 +26,12 @@ func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
 // GetPredecessorRPC gets predecessor of remote node through RPC
 func (remoteNode *RemoteNode) GetPredecessorRPC() *RemoteNode {
 	list := ChordNode.QueryPredecessor(remoteNode.IP)
+	fmt.Println(remoteNode.IP)
+	// fmt.Println(list)
 	if len(list) != 0 {
-		return ChordNode.QueryPredecessor(remoteNode.IP)[0]
+		return list[0]
 	} else {
+		fmt.Println("Remote node is nil")
 		return nil
 	}
 	// return ChordNode.QueryPredecessor(remoteNode.IP)[0]
@@ -41,12 +49,14 @@ func (remoteNode *RemoteNode) NotifyRPC(potential *RemoteNode) {
 }
 
 // NoReplyRPC checks if remoteNode is alive
-func (remoteNode *RemoteNode) NoReplyRPC() bool {
-	if remoteNode != nil {
-		return ChordNode.Ping(remoteNode.IP)
-	} else {
-		return false
-	}
+func (remoteNode *RemoteNode) ReplyRPC() bool {
+	fmt.Println(remoteNode)
+	return ChordNode.Ping(remoteNode.IP)
+	// if remoteNode != nil {
+	// 	return ChordNode.Ping(remoteNode.IP)
+	// } else {
+	// 	return false
+	// }
 }
 
 // GetRPC gets file using hashed file name as key from remote node

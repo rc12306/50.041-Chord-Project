@@ -134,6 +134,11 @@ func main() {
 		IP:         myip,
 	}
 
+	go server(myip)
+
+	chord.ChordNode.CreateNodeAndJoin(nil)
+	chord.ChordNode.PrintNode()
+
 	/*
 		chord.ChordNode.CreateNodeAndJoin(1, nil)
 		fmt.Printf("Node A's id is %d \n", nodeA.Identifier)
