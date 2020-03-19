@@ -120,7 +120,7 @@ func main() {
 		Join	j <id>		: Join the chord network by specifying id.
 		Print	p      		: Print node info.
 		Leave 	l     		: Leave the current chord network.
-		Find	f <fname>	: Find a file
+		Find	f <fname>	: Find a file.
 		
 		Your IP is : ` + IP_str)
 
@@ -152,9 +152,11 @@ func main() {
 				chord.ChordNode.Identifier = ID
 				chord.ChordNode.CreateNodeAndJoin(nil)
 				chord.ChordNode.PrintNode()
-				fmt.Print("Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
+				fmt.Print("Created chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ".")
 
 				// go node_listen(LISTENING_PORT, quit_listen)
+
+				fmt.Print("\n>>>")
 
 			case "p": // PRINT NODE DATA
 				if chord.ChordNode.Identifier == -1 {
@@ -180,12 +182,18 @@ func main() {
 				remoteNode_IP_str := inputs[1]
 				remoteNode_IP := fmt.Sprint(ip2Long(remoteNode_IP_str))
 				remoteNode_ID := hash(remoteNode_IP)
+				remoteNode := &chord.RemoteNode{
+					Identifier: remoteNode_ID,
+					IP:         remoteNode_IP_str,
+				}
+				chord.ChordNode.CreateNodeAndJoin(remoteNode)
 
-				// chord.ChordNode.CreateNodeAndJoin(remoteNode_IP_str)
+				fmt.Println("remoteNode is (" + remoteNode_IP_str + ") " + fmt.Sprint(remoteNode_ID) + ".")
+				fmt.Println("Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". ")
 
-				fmt.Print("Joined chord network (" + IP_str + ") as " + fmt.Sprint(ID) + ". remoteNode is " + fmt.Sprint(remoteNode_ID) + "." + "\n>>>")
+				// go node_listen(LISTENING_PORT, quit_listen)
 
-				go node_listen(LISTENING_PORT, quit_listen)
+				fmt.Print("\n>>>")
 
 			case "l": // LEAVE A NETWORK
 				if chord.ChordNode.Identifier == -1 {
