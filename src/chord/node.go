@@ -3,6 +3,7 @@ package chord
 import (
 	"fmt"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -18,8 +19,8 @@ type Node struct {
 	predecessor   *RemoteNode
 	fingerTable   []*RemoteNode
 	successorList []*RemoteNode
-	Stop          chan bool
-	fail          bool
+	stop          chan bool
+	wg            sync.WaitGroup
 	hashTable     map[string]string
 }
 
@@ -29,6 +30,7 @@ func (node *Node) create() error {
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = &RemoteNode{Identifier: node.Identifier, IP: node.IP}
 	node.hashTable = make(map[string]string)
+	node.stop = make(chan bool)
 	return nil
 }
 
@@ -40,6 +42,7 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 	node.successorList[0] = successor
 	node.hashTable = make(map[string]string)
 	node.updateSuccessorList(0)
+	node.stop = make(chan bool)
 	return nil
 }
 
@@ -76,7 +79,8 @@ func (node *Node) stabilise() {
 			}
 			node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			node.updateSuccessorList(0)
-		case <-node.Stop:
+		case <-node.stop:
+			node.wg.Done()
 			ticker.Stop()
 			return
 		}
@@ -101,7 +105,8 @@ func (node *Node) fixFingers() {
 				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
 			}
 			next = (next + 1) % tableSize
-		case <-node.Stop:
+		case <-node.stop:
+			node.wg.Done()
 			ticker.Stop()
 			return
 		}
@@ -120,7 +125,8 @@ func (node *Node) checkPredecessor() {
 			if node.predecessor != nil && !node.predecessor.IsAliveRPC() {
 				node.predecessor = nil
 			}
-		case <-node.Stop:
+		case <-node.stop:
+			node.wg.Done()
 			ticker.Stop()
 			return
 		}
@@ -206,8 +212,19 @@ func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) {
 		} else {
 			node.join(joinNode)
 		}
+		node.wg.Add(3)
 		go node.stabilise()
 		go node.fixFingers()
 		go node.checkPredecessor()
 	}
+}
+
+// ShutDown stops all functions and waits for all of them to end before returning
+func (node *Node) ShutDown() {
+	// telling three functions to stop
+	node.stop <- true
+	node.stop <- true
+	node.stop <- true
+	// wait for all three functions to end properly
+	node.wg.Wait()
 }

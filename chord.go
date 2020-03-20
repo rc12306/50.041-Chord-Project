@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"chord/src/chord"
+
 	// "crypto/sha1"     //hash()
 	"encoding/binary" //ip2int()
 	"fmt"
@@ -89,7 +90,6 @@ func main() {
 
 	chord.ChordNode = &chord.Node{
 		Identifier: -1,
-		Stop:       make(chan bool),
 	}
 
 	fmt.Println(
@@ -177,7 +177,7 @@ func main() {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
-				chord.ChordNode.Stop <- true
+				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
 				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
