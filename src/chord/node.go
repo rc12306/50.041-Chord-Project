@@ -49,10 +49,10 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
-		if remoteNode.IP != node.IP {
-			node.predecessor = remoteNode
-			node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
-		}
+		node.predecessor = remoteNode
+		node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		// if remoteNode.IP != node.IP {
+		// }
 	}
 }
 
@@ -73,7 +73,9 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
+			// fmt.Println("Before get predecessor")
 			x := node.successorList[0].GetPredecessorRPC()
+			// fmt.Println("After get predecessor", x)
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
@@ -101,9 +103,6 @@ func (node *Node) fixFingers() {
 			nextNode := int(math.Pow(2, float64(next)))
 			closestSuccessor := node.findSuccessor((node.Identifier + nextNode) % ringSize)
 			node.fingerTable[next] = closestSuccessor
-			if node.Identifier == 51 {
-				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
-			}
 			next = (next + 1) % tableSize
 		case <-node.stop:
 			node.wg.Done()
@@ -191,13 +190,13 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
 
-		if newSuccessorList[0].IP != node.successorList[firstLiveSuccessor].IP {
-			copy(copyList[1:], newSuccessorList)
-			copyList[0] = node.successorList[firstLiveSuccessor]
-		} else {
-			// fmt.Println("Else")
-			copy(copyList, newSuccessorList)
-		}
+		copy(copyList[1:], newSuccessorList)
+		copyList[0] = node.successorList[firstLiveSuccessor]
+		// if newSuccessorList[0].IP != node.successorList[0].IP {
+		// } else {
+		// fmt.Println("Else")
+		// copy(copyList, newSuccessorList)
+		// }
 		node.successorList = copyList
 	}
 }
