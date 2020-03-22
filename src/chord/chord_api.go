@@ -176,7 +176,7 @@ func (node *Node) Query(id int, closestPredIP string) *RemoteNode {
 	}
 
 	// set up arguments
-	payload := &Packet{"query", string(id), nil, ChordNode.IP}
+	payload := &Packet{"query", strconv.Itoa(id), nil, ChordNode.IP}
 	var reply Packet
 
 	// and make an rpc call
