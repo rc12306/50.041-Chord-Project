@@ -77,10 +77,9 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		// fmt.Println("File is in node ", payload.Msg)
 		// no action needed
 		return nil
-	case "getSuccesorList":
+	case "getSuccessorList":
 		// Call node to return succesor list
 		nodes := handleQuerySuccesorList()
-		// fmt.Println(nodes)
 		var newList []*RemoteNode
 		for _, v := range nodes {
 			if v != nil {
@@ -89,10 +88,14 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		}
 		*reply = Packet{"SuccesorList", "", newList, ChordNode.IP}
 		return nil
-	case "getPredecessesor":
+	case "getPredecessor":
 		// Call node to return it's predecessor
 		node := handleQueryPredecessor()
-		*reply = Packet{"Predecessor", "", []*RemoteNode{node}, ChordNode.IP}
+		if node == nil {
+			*reply = Packet{"Predecessor", "", []*RemoteNode{}, ChordNode.IP}
+		} else {
+			*reply = Packet{"Predecessor", "", []*RemoteNode{node}, ChordNode.IP}
+		}
 		return nil
 	case "notify":
 		// Call node to make changes if necessory
@@ -213,7 +216,7 @@ func (node *Node) QuerySuccessorList(receiverIP string) []*RemoteNode {
 	}
 
 	// set up arguments
-	payload := &Packet{"getSuccesorList", "Get successor list", nil, ChordNode.IP}
+	payload := &Packet{"getSuccessorList", "Get successor list", nil, ChordNode.IP}
 	var reply Packet
 
 	// and make an rpc call
@@ -239,7 +242,6 @@ func handleQuerySuccesorList() []*RemoteNode {
 	return predecessor
 */
 func (node *Node) QueryPredecessor(receiverIP string) []*RemoteNode {
-	// fmt.Println("IP to query " + receiverIP)
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		log.Fatal("Dialing:", err)

@@ -126,10 +126,9 @@ func main() {
 
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
+				go node_listen(IP)
 				chord.ChordNode.CreateNodeAndJoin(nil)
 				fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
-
-				go node_listen(IP)
 
 				fmt.Print("\n>>>")
 
@@ -163,12 +162,12 @@ func main() {
 				}
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
+
+				go node_listen(IP)
 				chord.ChordNode.CreateNodeAndJoin(remoteNode)
 
 				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
 				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
-
-				go node_listen(IP)
 
 				fmt.Print("\n>>>")
 

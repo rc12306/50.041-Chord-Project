@@ -2,6 +2,7 @@ package chord
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"sync"
 	"time"
@@ -73,13 +74,13 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
-			// fmt.Println("Before get predecessor")
 			x := node.successorList[0].GetPredecessorRPC()
-			// fmt.Println("After get predecessor", x)
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
-			node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
+			if node.successorList[0].IP != node.IP {
+				node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
+			}
 			node.updateSuccessorList(0)
 		case <-node.stop:
 			node.wg.Done()
@@ -204,7 +205,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
 func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) {
 	if node.IP == "" {
-		fmt.Println("IP of node has not been set")
+		log.Fatal("IP of node has not been set")
 	} else {
 		if joinNode == nil {
 			node.create()

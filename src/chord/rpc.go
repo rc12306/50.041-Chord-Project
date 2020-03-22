@@ -19,7 +19,7 @@ func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
 	// fmt.Println("get x?")
 	// fmt.Println(x)
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 		return nil
 	}
 	return ChordNode.QuerySuccessorList(remoteNode.IP)
@@ -28,7 +28,7 @@ func (remoteNode *RemoteNode) GetSuccessorListRPC() []*RemoteNode {
 // GetPredecessorRPC gets predecessor of remote node through RPC
 func (remoteNode *RemoteNode) GetPredecessorRPC() *RemoteNode {
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 		return nil
 	}
 	list := ChordNode.QueryPredecessor(remoteNode.IP)
@@ -43,7 +43,7 @@ func (remoteNode *RemoteNode) GetPredecessorRPC() *RemoteNode {
 func (remoteNode *RemoteNode) FindSuccessorRPC(id int) *RemoteNode {
 	// connect to remote node and ask it to run findsuccessor()
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 		return nil
 	}
 	return ChordNode.Query(id, remoteNode.IP)
@@ -52,7 +52,7 @@ func (remoteNode *RemoteNode) FindSuccessorRPC(id int) *RemoteNode {
 // NotifyRPC notifies remote node that portential thinks it may be the new predecessor of it through RPC?
 func (remoteNode *RemoteNode) NotifyRPC(potential *RemoteNode) {
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 	}
 	ChordNode.Notify(remoteNode.IP, potential)
 }
@@ -60,7 +60,7 @@ func (remoteNode *RemoteNode) NotifyRPC(potential *RemoteNode) {
 // IsAliveRPC checks if remoteNode is alive
 func (remoteNode *RemoteNode) IsAliveRPC() bool {
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 		return false
 	}
 	return ChordNode.Ping(remoteNode.IP)
@@ -69,7 +69,7 @@ func (remoteNode *RemoteNode) IsAliveRPC() bool {
 // GetRPC gets file using hashed file name as key from remote node
 func (remoteNode *RemoteNode) GetRPC(key string) string {
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 		return ""
 	}
 	return queryValue(remoteNode.IP, key)
@@ -78,7 +78,7 @@ func (remoteNode *RemoteNode) GetRPC(key string) string {
 // PutRPC puts key-value pair into remote node's hash table through RPC
 func (remoteNode *RemoteNode) PutRPC(key, value string) error {
 	if remoteNode == nil {
-		log.Fatal("Remote node is fatal: unable to make RPC call")
+		log.Fatal("Remote node has not been set: unable to make RPC call")
 		return nil
 	}
 	putKeyValue(remoteNode.IP, key, value)
