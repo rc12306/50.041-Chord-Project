@@ -2,7 +2,6 @@ package chord
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"sync"
 	"time"
@@ -22,7 +21,7 @@ type Node struct {
 	successorList []*RemoteNode
 	stop          chan bool
 	wg            sync.WaitGroup
-	hashTable     map[string]string
+	hashTable     map[int]string
 }
 
 // create new Chord ring
@@ -30,7 +29,7 @@ func (node *Node) create() error {
 	node.predecessor = nil
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = &RemoteNode{Identifier: node.Identifier, IP: node.IP}
-	node.hashTable = make(map[string]string)
+	node.hashTable = make(map[int]string)
 	node.stop = make(chan bool)
 	return nil
 }
@@ -38,10 +37,10 @@ func (node *Node) create() error {
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *RemoteNode) error {
 	node.predecessor = nil
-	successor := remoteNode.FindSuccessorRPC(node.Identifier)
+	successor := remoteNode.findSuccessorRPC(node.Identifier)
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = successor
-	node.hashTable = make(map[string]string)
+	node.hashTable = make(map[int]string)
 	node.updateSuccessorList(0)
 	node.stop = make(chan bool)
 	return nil
@@ -51,7 +50,7 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
 		node.predecessor = remoteNode
-		node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		node.transferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
 		// if remoteNode.IP != node.IP {
 		// }
 	}
@@ -74,12 +73,12 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
-			x := node.successorList[0].GetPredecessorRPC()
+			x := node.successorList[0].getPredecessorRPC()
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
 			if node.successorList[0].IP != node.IP {
-				node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
+				node.successorList[0].notifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			}
 			node.updateSuccessorList(0)
 		case <-node.stop:
@@ -122,7 +121,7 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor != nil && !node.predecessor.IsAliveRPC() {
+			if node.predecessor != nil && !node.predecessor.ping() {
 				node.predecessor = nil
 			}
 		case <-node.stop:
@@ -145,7 +144,7 @@ func (node *Node) findSuccessor(id int) *RemoteNode {
 	if n.IP == node.IP {
 		return n
 	}
-	return n.FindSuccessorRPC(id)
+	return n.findSuccessorRPC(id)
 
 	/*
 		if a node fails during the find successor procedure:
@@ -180,7 +179,7 @@ func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 
 func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 	// fmt.Println(node.successorList, firstLiveSuccessor)
-	if !node.successorList[firstLiveSuccessor].IsAliveRPC() {
+	if !node.successorList[firstLiveSuccessor].ping() {
 		firstLiveSuccessor++
 		if firstLiveSuccessor == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -188,7 +187,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
-		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorListRPC()
+		newSuccessorList := node.successorList[firstLiveSuccessor].getSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
 
 		copy(copyList[1:], newSuccessorList)
@@ -200,31 +199,4 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 		// }
 		node.successorList = copyList
 	}
-}
-
-// CreateNodeAndJoin helps initialise nodes and add them to the network for testing
-func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) {
-	if node.IP == "" {
-		log.Fatal("IP of node has not been set")
-	} else {
-		if joinNode == nil {
-			node.create()
-		} else {
-			node.join(joinNode)
-		}
-		node.wg.Add(3)
-		go node.stabilise()
-		go node.fixFingers()
-		go node.checkPredecessor()
-	}
-}
-
-// ShutDown stops all functions and waits for all of them to end before returning
-func (node *Node) ShutDown() {
-	// telling three functions to stop
-	node.stop <- true
-	node.stop <- true
-	node.stop <- true
-	// wait for all three functions to end properly
-	node.wg.Wait()
 }

@@ -69,9 +69,8 @@ func (node *Node) PrintNode() {
 		}
 	}
 	print += "\nHash Table:\n"
-	for key, value := range node.hashTable {
-		keyIdentifier := Hash(key)
-		print += "\t" + key + " (" + strconv.Itoa(keyIdentifier) + "): " + value + "\n"
+	for hashedFile, fileName := range node.hashTable {
+		print += strconv.Itoa(hashedFile) + ": " + fileName + "\n"
 	}
 	print += "\n========================================================="
 
