@@ -3,6 +3,7 @@ package chord
 import (
 	"fmt"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -18,9 +19,9 @@ type Node struct {
 	predecessor   *RemoteNode
 	fingerTable   []*RemoteNode
 	successorList []*RemoteNode
-	Stop          chan bool
-	fail          bool
-	hashTable     map[string]string
+	stop          chan bool
+	wg            sync.WaitGroup
+	hashTable     map[int]string
 }
 
 // create new Chord ring
@@ -28,28 +29,30 @@ func (node *Node) create() error {
 	node.predecessor = nil
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = &RemoteNode{Identifier: node.Identifier, IP: node.IP}
-	node.hashTable = make(map[string]string)
+	node.hashTable = make(map[int]string)
+	node.stop = make(chan bool)
 	return nil
 }
 
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *RemoteNode) error {
 	node.predecessor = nil
-	successor := remoteNode.FindSuccessorRPC(node.Identifier)
+	successor := remoteNode.findSuccessorRPC(node.Identifier)
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = successor
-	node.hashTable = make(map[string]string)
+	node.hashTable = make(map[int]string)
 	node.updateSuccessorList(0)
+	node.stop = make(chan bool)
 	return nil
 }
 
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
-		if remoteNode.IP != node.IP {
-			node.predecessor = remoteNode
-			node.TransferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
-		}
+		node.predecessor = remoteNode
+		node.transferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		// if remoteNode.IP != node.IP {
+		// }
 	}
 }
 
@@ -70,13 +73,16 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
-			x := node.successorList[0].GetPredecessorRPC()
+			x := node.successorList[0].getPredecessorRPC()
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
-			node.successorList[0].NotifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
+			if node.successorList[0].IP != node.IP {
+				node.successorList[0].notifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
+			}
 			node.updateSuccessorList(0)
-		case <-node.Stop:
+		case <-node.stop:
+			node.wg.Done()
 			ticker.Stop()
 			return
 		}
@@ -97,11 +103,9 @@ func (node *Node) fixFingers() {
 			nextNode := int(math.Pow(2, float64(next)))
 			closestSuccessor := node.findSuccessor((node.Identifier + nextNode) % ringSize)
 			node.fingerTable[next] = closestSuccessor
-			if node.Identifier == 51 {
-				// fmt.Println((node.Identifier+nextNode)%ringSize, node.fingerTable[next].Identifier, closestSuccessor.Identifier)
-			}
 			next = (next + 1) % tableSize
-		case <-node.Stop:
+		case <-node.stop:
+			node.wg.Done()
 			ticker.Stop()
 			return
 		}
@@ -117,10 +121,11 @@ func (node *Node) checkPredecessor() {
 	for {
 		select {
 		case <-ticker.C:
-			if node.predecessor != nil && !node.predecessor.IsAliveRPC() {
+			if node.predecessor != nil && !node.predecessor.ping() {
 				node.predecessor = nil
 			}
-		case <-node.Stop:
+		case <-node.stop:
+			node.wg.Done()
 			ticker.Stop()
 			return
 		}
@@ -139,7 +144,7 @@ func (node *Node) findSuccessor(id int) *RemoteNode {
 	if n.IP == node.IP {
 		return n
 	}
-	return n.FindSuccessorRPC(id)
+	return n.findSuccessorRPC(id)
 
 	/*
 		if a node fails during the find successor procedure:
@@ -174,7 +179,7 @@ func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 
 func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 	// fmt.Println(node.successorList, firstLiveSuccessor)
-	if !node.successorList[firstLiveSuccessor].IsAliveRPC() {
+	if !node.successorList[firstLiveSuccessor].ping() {
 		firstLiveSuccessor++
 		if firstLiveSuccessor == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -182,32 +187,16 @@ func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
 			node.updateSuccessorList(firstLiveSuccessor)
 		}
 	} else {
-		newSuccessorList := node.successorList[firstLiveSuccessor].GetSuccessorListRPC()
+		newSuccessorList := node.successorList[firstLiveSuccessor].getSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
 
-		if newSuccessorList[0].IP != node.successorList[firstLiveSuccessor].IP {
-			copy(copyList[1:], newSuccessorList)
-			copyList[0] = node.successorList[firstLiveSuccessor]
-		} else {
-			// fmt.Println("Else")
-			copy(copyList, newSuccessorList)
-		}
+		copy(copyList[1:], newSuccessorList)
+		copyList[0] = node.successorList[firstLiveSuccessor]
+		// if newSuccessorList[0].IP != node.successorList[0].IP {
+		// } else {
+		// fmt.Println("Else")
+		// copy(copyList, newSuccessorList)
+		// }
 		node.successorList = copyList
-	}
-}
-
-// CreateNodeAndJoin helps initialise nodes and add them to the network for testing
-func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) {
-	if node.IP == "" {
-		fmt.Println("IP of node has not been set")
-	} else {
-		if joinNode == nil {
-			node.create()
-		} else {
-			node.join(joinNode)
-		}
-		go node.stabilise()
-		go node.fixFingers()
-		go node.checkPredecessor()
 	}
 }

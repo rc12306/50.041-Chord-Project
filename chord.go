@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"chord/src/chord"
+
 	// "crypto/sha1"     //hash()
 	"encoding/binary" //ip2int()
 	"fmt"
@@ -89,7 +90,6 @@ func main() {
 
 	chord.ChordNode = &chord.Node{
 		Identifier: -1,
-		Stop:       make(chan bool),
 	}
 
 	fmt.Println(
@@ -126,10 +126,9 @@ func main() {
 
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
+				go node_listen(IP)
 				chord.ChordNode.CreateNodeAndJoin(nil)
 				fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
-
-				go node_listen(IP)
 
 				fmt.Print("\n>>>")
 
@@ -163,12 +162,12 @@ func main() {
 				}
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
+
+				go node_listen(IP)
 				chord.ChordNode.CreateNodeAndJoin(remoteNode)
 
 				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
 				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
-
-				go node_listen(IP)
 
 				fmt.Print("\n>>>")
 
@@ -177,7 +176,7 @@ func main() {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
-				chord.ChordNode.Stop <- true
+				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
 				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
