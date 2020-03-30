@@ -9,6 +9,7 @@ import (
 
 const tableSize = 6
 const ringSize = 64
+const replicationFactor = 3
 const fingerTableUpdateRate = 50 * time.Millisecond
 const checkPredUpdateRate = 100 * time.Millisecond
 
@@ -22,6 +23,8 @@ type Node struct {
 	stop          chan bool
 	wg            sync.WaitGroup
 	hashTable     map[int]string
+	dataStoreLock sync.RWMutex
+	successorLock sync.RWMutex
 }
 
 // create new Chord ring
@@ -41,7 +44,9 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = successor
 	node.hashTable = make(map[int]string)
+	node.successorLock.Lock()
 	node.updateSuccessorList(0)
+	node.successorLock.Unlock()
 	node.stop = make(chan bool)
 	return nil
 }
@@ -51,8 +56,6 @@ func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
 		node.predecessor = remoteNode
 		node.transferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
-		// if remoteNode.IP != node.IP {
-		// }
 	}
 }
 
@@ -73,6 +76,7 @@ func (node *Node) stabilise() {
 	for {
 		select {
 		case <-ticker.C:
+			node.successorLock.Lock()
 			x := node.successorList[0].getPredecessorRPC()
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
@@ -81,6 +85,7 @@ func (node *Node) stabilise() {
 				node.successorList[0].notifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			}
 			node.updateSuccessorList(0)
+			node.successorLock.Unlock()
 		case <-node.stop:
 			node.wg.Done()
 			ticker.Stop()
@@ -136,67 +141,49 @@ func (node *Node) checkPredecessor() {
 
 // find successor of node/key with identifier id i.e. smallest node with identifier >= id
 func (node *Node) findSuccessor(id int) *RemoteNode {
+	node.successorLock.RLock()
 	if BetweenRightIncl(id, node.Identifier, node.successorList[0].Identifier) {
 		return node.successorList[0]
 	}
+	node.successorLock.RUnlock()
 	// get closest preceding node to id in the finger table of this node
 	n, _ := node.findClosestPredecessor(id)
 	if n.IP == node.IP {
 		return n
 	}
 	return n.findSuccessorRPC(id)
-
-	/*
-		if a node fails during the find successor procedure:
-			after timeout, lookup proceeds by trying next best predecessor among nodes in the finger table and successor list
-	*/
 }
 
 // find highest predecessor of node/key with identifier id i.e. largest node with identifier < id
 func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 	/*
-		searches finger table (and successor list) for most immediate predecessor of id
+		searches finger table for most immediate predecessor of id
 	*/
-	closestPred := &RemoteNode{IP: node.IP, Identifier: node.Identifier}
 	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
 		if fingerEntry != nil && Between(fingerEntry.Identifier, node.Identifier, id) {
-			closestPred = fingerEntry
-			break
+			return fingerEntry, nil
 		}
 	}
-	for i := len(node.successorList) - 1; i >= 0; i-- {
-		successorListEntry := node.successorList[i]
-		if successorListEntry != nil &&
-			successorListEntry.Identifier > closestPred.Identifier &&
-			Between(successorListEntry.Identifier, node.Identifier, id) {
-			closestPred = successorListEntry
-			break
-		}
-	}
-	return closestPred, nil
+	return &RemoteNode{IP: node.IP, Identifier: node.Identifier}, nil
 }
 
-func (node *Node) updateSuccessorList(firstLiveSuccessor int) {
-	// fmt.Println(node.successorList, firstLiveSuccessor)
-	if !node.successorList[firstLiveSuccessor].ping() {
-		firstLiveSuccessor++
-		if firstLiveSuccessor == len(node.successorList) {
+// not locked: functions calling updateSuccessorList must ensure successorLock is held before calling function
+func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
+	firstLiveSuccessor := node.successorList[firstLiveSuccessorIndex]
+	if !firstLiveSuccessor.ping() {
+		firstLiveSuccessorIndex++
+		if firstLiveSuccessorIndex == len(node.successorList) {
 			fmt.Println("All nodes have failed")
 		} else {
-			node.updateSuccessorList(firstLiveSuccessor)
+			node.updateSuccessorList(firstLiveSuccessorIndex)
 		}
 	} else {
-		newSuccessorList := node.successorList[firstLiveSuccessor].getSuccessorListRPC()
+		newSuccessorList := firstLiveSuccessor.getSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
 
 		copy(copyList[1:], newSuccessorList)
-		copyList[0] = node.successorList[firstLiveSuccessor]
-		// if newSuccessorList[0].IP != node.successorList[0].IP {
-		// } else {
-		// fmt.Println("Else")
-		// copy(copyList, newSuccessorList)
-		// }
+		copyList[0] = firstLiveSuccessor
 		node.successorList = copyList
 	}
 }
