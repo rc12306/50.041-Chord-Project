@@ -1,10 +1,9 @@
 package chord
 
 import (
-	"fmt"
-
-	// "errors"
+	"errors"
 	"log"
+
 	// "net"
 	"net/rpc"
 	// "time"
@@ -14,9 +13,10 @@ import (
 var ChordNode *Node
 
 /*
-	packet contains the format of how messages for sent to and fro nodes
-	packetType:	ping, pong, query, answer
-	msg:		Details of the packet type
+	Packet contains the format of how messages for sent to and fro nodes
+	PacketType:	ping, pong, query, answer
+	Msg:		Details of the packet type
+	MsgInt:
 	List: 		A list with remote node type(contains ID and IP address of node)
 	senderIP:	sender IP address
 */
@@ -43,17 +43,16 @@ type Listener int
 /*
 	Handles the receival of message
 	Different action for different packet type
-	ping:	Ping checks if the node is alive, reply if alive
-	pong:	Pong is a reply from a alive node, no need to do anything
-	query:	Query is used for 2 things
-				1. Lookup of which node the file resides in
-				2. Find succesor
-	answer: Answer is the reply to query(above)
-	getSuccesorList:	A query to get the succesor lists from specified node
-	getPredecessesor:	A query to get predecessor info from specified node
-	notify:	A notification to inform specified node to check it's predecessor
+	ping:				Ping checks if the node is alive, reply if alive
+	findSuccessor:		Find succesor
+	getSuccessorList:	A query to get the succesor lists from specified node
+	getPredecessor:		A query to get predecessor info from specified node
+	notify:				A notification to inform specified node to check it's predecessor
 
-	default:	If the packet type does not fall in any of the catergories then ignore
+	getValue:			Lookup of which node the file resides in
+	putKeyValue:		Put the file in the node
+
+	default:			If the packet type does not fall in any of the catergories then ignore
 
 */
 func (l *Listener) Receive(payload *Packet, reply *Packet) error {
@@ -65,10 +64,6 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		*reply = Packet{"pong", "alive", 0, nil, ChordNode.IP}
 		// *reply = Packet{"pong", "alive", nil, "127.0.0.1"}
 		return nil
-	case "pong":
-		// fmt.Println("Receive pong from " + payload.SenderIP)
-		// no action needed
-		return nil
 	case "findSuccessor":
 		// fmt.Println("Receive query from " + payload.SenderIP)
 		// Call node to do the search
@@ -76,13 +71,13 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		// Form the packet for reply
 		*reply = Packet{"answer", "", node.Identifier, []*RemoteNode{node}, ChordNode.IP}
 		return nil
-	case "answer":
-		// fmt.Println("File is in node ", payload.Msg)
-		// no action needed
-		return nil
 	case "getSuccessorList":
 		// Call node to return succesor list
 		nodes := handleGetSuccesorList()
+		if nodes == nil {
+			// reply with empty list
+			*reply = Packet{"SuccesorList", "", 0, []*RemoteNode{}, ChordNode.IP}
+		}
 		var newList []*RemoteNode
 		for _, v := range nodes {
 			if v != nil {
@@ -107,13 +102,19 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "getValue":
 		// Call node to get value from hashtable
 		value := handleGetValue(payload.MsgInt)
-		*reply = Packet{"Value", value, 0, []*RemoteNode{}, ChordNode.IP}
+		*reply = Packet{"Value", value, 0, nil, ChordNode.IP}
 		return nil
 	case "putKeyValue":
 		// Call node to put file (and its identifier) into hashtable
-		handlePutKeyValue(payload.MsgInt, payload.Msg)
+		putSuccess := handlePutKeyValue(payload.MsgInt, payload.Msg)
+		if putSuccess != nil {
+			*reply = Packet{"Value", "Success", 0, nil, ChordNode.IP}
+		} else {
+			*reply = Packet{"Value", "File already exist in the table", 0, nil, ChordNode.IP}
+		}
 		return nil
 	default:
+		// Packet Pong, Answer, Value will enter this case
 		return nil
 	}
 
@@ -125,18 +126,19 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	Args:
 		senderIP: 	sender IP (will it be given in node.go?)
 		receiverIP:	receiver IP (must be given by node.go)
+	return bool
 */
 func (remoteNode *RemoteNode) ping() bool {
 	// try to handshake with other node
 	// fmt.Println("Ping")
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
+		log.Printf("Remote node has not been set: unable to make RPC call")
 		return false
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node is not alive")
 		return false
 	}
 
@@ -148,7 +150,7 @@ func (remoteNode *RemoteNode) ping() bool {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node is not alive")
 		return false
 	}
 	// fmt.Println(reply.SenderIP + " is alive. ")
@@ -171,19 +173,20 @@ func pong() {
 	Args:
 		id:	hash of filename (key for lookup) OR
 			hash of IP
-	return id and ip of node who holds the file
+	return id and ip of node who holds the file, error (if any)
 */
-func (remoteNode *RemoteNode) findSuccessorRPC(id int) *RemoteNode {
+func (remoteNode *RemoteNode) findSuccessorRPC(id int) (*RemoteNode, error) {
 	// connect to remote node and ask it to run findsuccessor()
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
-		return nil
+		log.Printf("Remote node has not been set: unable to make RPC call")
+		return nil, errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	// query closest predecessor
 	// get closestPred IP
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
 	// set up arguments
@@ -193,10 +196,11 @@ func (remoteNode *RemoteNode) findSuccessorRPC(id int) *RemoteNode {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 	client.Close()
-	return reply.List[0]
+	return reply.List[0], nil
 }
 
 func handleFindSuccessor(id int) *RemoteNode {
@@ -216,16 +220,17 @@ func answer() {
 /*
 	Set up query for getting successor list
 	Use by node
-	return successor list
+	return successor list, error (if any)
 */
-func (remoteNode *RemoteNode) getSuccessorListRPC() []*RemoteNode {
+func (remoteNode *RemoteNode) getSuccessorListRPC() ([]*RemoteNode, error) {
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
-		return nil
+		log.Printf("Remote node has not been set: unable to make RPC call")
+		return nil, errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
 	// set up arguments
@@ -235,11 +240,15 @@ func (remoteNode *RemoteNode) getSuccessorListRPC() []*RemoteNode {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
 	client.Close()
-	return reply.List
+	if reply.List != nil {
+		return reply.List, nil
+	}
+	return nil, errors.New("No successor list")
 }
 
 func handleGetSuccesorList() []*RemoteNode {
@@ -252,16 +261,17 @@ func handleGetSuccesorList() []*RemoteNode {
 	Use by node
 	Args:
 		receiverIP:	IP of node you want to query
-	return predecessor
+	return predecessor, error (if any)
 */
-func (remoteNode *RemoteNode) getPredecessorRPC() *RemoteNode {
+func (remoteNode *RemoteNode) getPredecessorRPC() (*RemoteNode, error) {
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
-		return nil
+		log.Printf("Remote node has not been set: unable to make RPC call")
+		return nil, errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
 	// set up arguments
@@ -271,14 +281,15 @@ func (remoteNode *RemoteNode) getPredecessorRPC() *RemoteNode {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
 	client.Close()
 	if len(reply.List) != 0 {
-		return reply.List[0]
+		return reply.List[0], nil
 	}
-	return nil
+	return nil, errors.New("No predecessors")
 }
 
 func handleGetPredecessor() *RemoteNode {
@@ -295,11 +306,12 @@ func handleGetPredecessor() *RemoteNode {
 */
 func (remoteNode *RemoteNode) notifyRPC(potentialPred *RemoteNode) {
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
+		log.Printf("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		// return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
 	// set up arguments
@@ -310,7 +322,8 @@ func (remoteNode *RemoteNode) notifyRPC(potentialPred *RemoteNode) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		// return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
 	client.Close()
@@ -322,14 +335,22 @@ func handleNotify(potentialPred *RemoteNode) {
 	ChordNode.notify(potentialPred)
 }
 
+/*
+	Set up getting files
+	Use by node
+	Args:
+		key:	hashed value of file name
+	return file value, error (if any)
+*/
 func (remoteNode *RemoteNode) getRPC(key int) (string, error) {
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
-		return "", nil
+		log.Printf("Remote node has not been set: unable to make RPC call")
+		return "", errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		return "", errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
 	// set up arguments
@@ -339,9 +360,15 @@ func (remoteNode *RemoteNode) getRPC(key int) (string, error) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		return "", errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
-	// TODO: return error if key does not exist in hashtable
+	// Return error if key does not exist in hashtable
+	if reply.Msg == "" {
+		return "", errors.New("File does not exist in the table")
+	}
+
+	client.Close()
 	return reply.Msg, nil
 }
 
@@ -349,19 +376,29 @@ func handleGetValue(key int) string {
 	// Call node to make changes
 	value, err := ChordNode.get(key)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
+		return ""
 	}
 	return value
 }
 
+/*
+	Set up adding files
+	Use by node
+	Args:
+		key:	hashed value of file name
+		value:	file name
+	return error (if any)
+*/
 func (remoteNode *RemoteNode) putRPC(key int, value string) error {
 	if remoteNode == nil {
-		log.Fatal("Remote node has not been set: unable to make RPC call")
-		return nil
+		log.Printf("Remote node has not been set: unable to make RPC call")
+		return errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Fatal("Dialing:", err)
+		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		return errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
 	// set up arguments
@@ -371,18 +408,25 @@ func (remoteNode *RemoteNode) putRPC(key int, value string) error {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		return errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
-	// TODO: check that put was successful
+	// Check that put was successful
+	if reply.Msg != "Success" {
+		return errors.New("File already exist in the table")
+	}
+
+	client.Close()
 	return nil
 }
 
-func handlePutKeyValue(key int, value string) {
+func handlePutKeyValue(key int, value string) error {
 	// Call node to make changes
 	err := ChordNode.put(key, value)
 	if err != nil {
-		// send error in msg??
-		fmt.Println(err)
+		log.Println(err)
+		return errors.New("File already exist in the table")
 	}
+	return nil
 }

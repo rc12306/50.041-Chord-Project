@@ -10,8 +10,8 @@ import (
 const tableSize = 6
 const ringSize = 64
 const replicationFactor = 3
-const fingerTableUpdateRate = 50 * time.Millisecond
-const checkPredUpdateRate = 100 * time.Millisecond
+const fingerTableUpdateRate = 500 * time.Millisecond
+const checkPredUpdateRate = 1000 * time.Millisecond
 
 // Node refers to Chord Node
 type Node struct {
@@ -40,7 +40,7 @@ func (node *Node) create() error {
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *RemoteNode) error {
 	node.predecessor = nil
-	successor := remoteNode.findSuccessorRPC(node.Identifier)
+	successor, _ := remoteNode.findSuccessorRPC(node.Identifier)
 	node.successorList = make([]*RemoteNode, tableSize)
 	node.successorList[0] = successor
 	node.hashTable = make(map[int]string)
@@ -77,7 +77,7 @@ func (node *Node) stabilise() {
 		select {
 		case <-ticker.C:
 			node.successorLock.Lock()
-			x := node.successorList[0].getPredecessorRPC()
+			x, _ := node.successorList[0].getPredecessorRPC()
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
@@ -151,7 +151,8 @@ func (node *Node) findSuccessor(id int) *RemoteNode {
 	if n.IP == node.IP {
 		return n
 	}
-	return n.findSuccessorRPC(id)
+	successor, _ := n.findSuccessorRPC(id)
+	return successor
 }
 
 // find highest predecessor of node/key with identifier id i.e. largest node with identifier < id
@@ -179,7 +180,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 			node.updateSuccessorList(firstLiveSuccessorIndex)
 		}
 	} else {
-		newSuccessorList := firstLiveSuccessor.getSuccessorListRPC()
+		newSuccessorList, _ := firstLiveSuccessor.getSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
 
 		copy(copyList[1:], newSuccessorList)
