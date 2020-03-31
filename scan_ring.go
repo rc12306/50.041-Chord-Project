@@ -25,7 +25,15 @@ import (
 type Packet struct {
 	PacketType string
 	Msg        string
+	MsgInt     int
+	List       []*RemoteNode
 	SenderIP   string
+}
+
+// RemoteNode contains information of other remote Chord Nodes
+type RemoteNode struct {
+	Identifier int
+	IP         string
 }
 
 /*
@@ -153,7 +161,7 @@ func Ping(senderIP string, receiverIP string) bool {
 	}
 
 	// Set up arguments
-	payload := &Packet{"ping", "Are you alive?", senderIP}
+	payload := &Packet{"ping", "Are you alive?", 0, nil, senderIP}
 
 	var reply Packet
 
