@@ -156,7 +156,7 @@ func Ping(senderIP string, receiverIP string) bool {
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
-		log.Fatal("Dialing:", err)
+		log.Printf("Dialing:", err)
 		return false
 	}
 
@@ -168,7 +168,7 @@ func Ping(senderIP string, receiverIP string) bool {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Fatal("Connection error:", err)
+		log.Printf("Connection error:", err)
 		fmt.Println(receiverIP, " not in chord ring")
 		return false
 	}
