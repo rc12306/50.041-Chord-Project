@@ -96,12 +96,16 @@ func main() {
 		`
 		Welcome to CHORD!
 		
-		Create 	c     		: Create a new chord network.
-		Join	j <id>		: Join the chord network by specifying id.
+		Scan    s   		: Scan network for available nodes.
+		Init    i   		: Create and Join.
 		Print	p      		: Print node info.
 		Leave 	l     		: Leave the current chord network.
 		Find	f <fname>	: Find a file.
-		
+		Add     a <fname>	: Add a file.
+
+		Create 	c     		: Create a new chord network. (Deprecated)
+		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
+
 		Your IP is : ` + IP)
 	fmt.Print(">>>")
 
@@ -124,21 +128,16 @@ func main() {
 					break
 				}
 
+				fmt.Println("Deprecated function!")
+
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
+
 				go node_listen(IP)
 				chord.ChordNode.CreateNodeAndJoin(nil)
+
 				fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
 
-				fmt.Print("\n>>>")
-
-			case "p": // PRINT NODE DATA
-				if chord.ChordNode.Identifier == -1 {
-					fmt.Print("Invalid node.\n>>>")
-					break
-				}
-
-				chord.ChordNode.PrintNode()
 				fmt.Print("\n>>>")
 
 			case "j": // JOIN A NETWORK
@@ -152,6 +151,8 @@ func main() {
 					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
+
+				fmt.Println("Deprecated function!")
 
 				remoteNode_IP := inputs[1]                              //String of IP
 				remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
@@ -171,11 +172,63 @@ func main() {
 
 				fmt.Print("\n>>>")
 
+			case "s": // SCAN IP
+				basicIP, ipSlice := chord.NetworkIP()
+				_ = basicIP
+				fmt.Println(ipSlice)
+				// if len(ipSlice) == 0 {
+				// 	fmt.Println("Empty")
+				// }
+				fmt.Print("\n>>>")
+
+			case "i": // INITIALISE - Create Node and Join
+
+				if chord.ChordNode.Identifier != -1 {
+					fmt.Print("Node already exists.\n>>>")
+					break
+				}
+
+				if len(inputs) <= 1 {
+					fmt.Print("Missing Variable(s)\n>>>")
+					break
+				}
+				// TODO: use scan-ip to find existing nodes
+				// TODO: how to decide which to use as remote node?
+				remoteNode_IP := inputs[1]                              //String of IP
+				remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+				remoteNode_ID := chord.Hash(remoteNode_IP_str)          //Hash of decimal IP
+				remoteNode := &chord.RemoteNode{
+					Identifier: remoteNode_ID,
+					IP:         remoteNode_IP,
+				}
+
+				chord.ChordNode.IP = IP
+				chord.ChordNode.Identifier = ID
+
+				go node_listen(IP)
+				chord.ChordNode.CreateNodeAndJoin(remoteNode)
+
+				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
+
+				fmt.Print("\n>>>")
+
+			case "p": // PRINT NODE DATA
+				if chord.ChordNode.Identifier == -1 {
+					fmt.Print("Invalid node.\n>>>")
+					break
+				}
+
+				chord.ChordNode.PrintNode()
+				fmt.Print("\n>>>")
+
 			case "l": // LEAVE A NETWORK
 				if chord.ChordNode.Identifier == -1 {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
+
+				// TODO: use shutdown() to find existing nodes
 				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
@@ -195,12 +248,31 @@ func main() {
 
 				inputs = inputs[1:]
 				filename := strings.Join(inputs, " ")
-				filename_hash := fmt.Sprint(chord.Hash(filename))
-				fmt.Print("	" + filename + " (" + filename_hash + ")")
+				fmt.Print("	" + filename)
 
-				// Step 1: Check own hash table.
-				// Step 2: Forward query. | Obtain query.
-				// (Still waiting for connection.)
+				// TODO: use FindFile to find file with correct filename
+				chord.ChordNode.FindFile(filename)
+
+				fmt.Print("\n>>>")
+
+			case "a": // ADD A FILE BY FILENAME
+				if chord.ChordNode.Identifier == -1 {
+					fmt.Print("Invalid node.\n>>>")
+					break
+				}
+
+				if len(inputs) <= 1 {
+					fmt.Print("Missing Variable(s)\n>>>")
+					break
+				}
+				fmt.Print("Node (" + IP + ") " + fmt.Sprint(ID) + " adding file: \n")
+
+				inputs = inputs[1:]
+				filename := strings.Join(inputs, " ")
+				fmt.Print("	" + filename)
+
+				// TODO: use AddFile to add file with correct filename
+				chord.ChordNode.AddFile(filename)
 
 				fmt.Print("\n>>>")
 
