@@ -3,7 +3,7 @@ package main
 import (
   "net"
   "os/exec"
-  "fmt"
+  // "fmt"
   // "github.com/k0kubun/pp"
 )
 
@@ -53,7 +53,7 @@ func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
   var alives []Pong
   for i := 0; i < pongNum; i++ {
     pong := <-pongChan
-    fmt.Println("received:", pong)
+    // fmt.Println("received:", pong)
     if pong.Alive {
       alives = append(alives, pong)
     }

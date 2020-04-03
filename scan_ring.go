@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
-	"os/exec"
+	// "os/exec"
 
 	// "errors"
 	"log"
@@ -53,60 +53,60 @@ func GetOutboundIP() string {
 	return localAddr.IP.String()
 }
 
-func Hosts(cidr string) ([]string, error) {
-	ip, ipnet, err := net.ParseCIDR(cidr)
-	if err != nil {
-		return nil, err
-	}
-
-	var ips []string
-	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
-		ips = append(ips, ip.String())
-	}
-	// remove network address and broadcast address
-	return ips[1 : len(ips)-1], nil
-}
+// func Hosts(cidr string) ([]string, error) {
+// 	ip, ipnet, err := net.ParseCIDR(cidr)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+//
+// 	var ips []string
+// 	for ip := ip.Mask(ipnet.Mask); ipnet.Contains(ip); inc(ip) {
+// 		ips = append(ips, ip.String())
+// 	}
+// 	// remove network address and broadcast address
+// 	return ips[1 : len(ips)-1], nil
+// }
 
 //  http://play.golang.org/p/m8TNTtygK0
-func inc(ip net.IP) {
-	for j := len(ip) - 1; j >= 0; j-- {
-		ip[j]++
-		if ip[j] > 0 {
-			break
-		}
-	}
-}
+// func inc(ip net.IP) {
+// 	for j := len(ip) - 1; j >= 0; j-- {
+// 		ip[j]++
+// 		if ip[j] > 0 {
+// 			break
+// 		}
+// 	}
+// }
 
-type Pong struct {
-	Ip    string
-	Alive bool
-}
+// type Pong struct {
+// 	Ip    string
+// 	Alive bool
+// }
 
-func ping(pingChan <-chan string, pongChan chan<- Pong) {
-	for ip := range pingChan {
-		_, err := exec.Command("ping", "-c1", "-t1", ip).Output()
-		var alive bool
-		if err != nil {
-			alive = false
-		} else {
-			alive = true
-		}
-		pongChan <- Pong{Ip: ip, Alive: alive}
-	}
-}
+// func ping(pingChan <-chan string, pongChan chan<- Pong) {
+// 	for ip := range pingChan {
+// 		_, err := exec.Command("ping", "-c1", "-t1", ip).Output()
+// 		var alive bool
+// 		if err != nil {
+// 			alive = false
+// 		} else {
+// 			alive = true
+// 		}
+// 		pongChan <- Pong{Ip: ip, Alive: alive}
+// 	}
+// }
 
-func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
-	var alives []Pong
-	for i := 0; i < pongNum; i++ {
-		pong := <-pongChan
-		//fmt.Println("received:", pong)
-
-		if pong.Alive {
-			alives = append(alives, pong)
-		}
-	}
-	doneChan <- alives
-}
+// func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
+// 	var alives []Pong
+// 	for i := 0; i < pongNum; i++ {
+// 		pong := <-pongChan
+// 		//fmt.Println("received:", pong)
+//
+// 		if pong.Alive {
+// 			alives = append(alives, pong)
+// 		}
+// 	}
+// 	doneChan <- alives
+// }
 
 func NetworkIP() (string, []string) {
 	fmt.Println("Searching for IP of nodes in network ... ...")
@@ -156,7 +156,7 @@ func Ping(senderIP string, receiverIP string) bool {
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
-		log.Printf("Dialing:", err)
+		log.Println("Dialing:", err)
 		return false
 	}
 
@@ -168,7 +168,7 @@ func Ping(senderIP string, receiverIP string) bool {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Connection error:", err)
+		log.Println("Connection error:", err)
 		fmt.Println(receiverIP, " not in chord ring")
 		return false
 	}
@@ -202,7 +202,7 @@ func CheckRing() []string {
 	return ipInRing
 }
 
-func main() {
-	ipInChordRing := CheckRing()
-	fmt.Println(ipInChordRing)
-}
+// func main() {
+// 	ipInChordRing := CheckRing()
+// 	fmt.Println(ipInChordRing)
+// }
