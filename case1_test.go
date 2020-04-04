@@ -9,37 +9,33 @@ import (
 // Test1 creates the chord ring structure
 func Test1(t *testing.T) {
   // init User IP info
-  IP := chord.GetOutboundIP()
-  IP_str := fmt.Sprint(ip2Long(IP))
-  ID := chord.Hash(IP_str)
+  IP_0 := chord.GetOutboundIP()
+  IP_str_0 := fmt.Sprint(ip2Long(IP_0))
+  ID_0 := chord.Hash(IP_str_0)
 
-  // create a node
-  chord.ChordNode = &chord.Node{
-    Identifier: -1,
+  // create initial node
+  // all other nodes will join to this
+  remoteNode := &chord.RemoteNode{
+  	Identifier: ID_0,
+  	IP:         IP_0,
   }
-  chord.ChordNode.IP = IP
-	chord.ChordNode.Identifier = ID
-	go node_listen(IP)
-	chord.ChordNode.CreateNodeAndJoin(nil)
-	fmt.Println("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
-  // chord.ChordNode.PrintNode()
+  go node_listen(IP_0)
 
   // add other IPs to first node
   _, othersIp := NetworkIP()
   for _, s := range othersIp {
     fmt.Println("Found IP in network: ", s)
-    remoteNode_IP := s                              //String of IP
-		remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
-		remoteNode_ID := chord.Hash(remoteNode_IP_str)          //Hash of decimal IP
-		remoteNode := &chord.RemoteNode{
-			Identifier: remoteNode_ID,
-			IP:         remoteNode_IP,
-		}
+    IP := s
+    IP_str := fmt.Sprint(ip2Long(IP))
+    ID := chord.Hash(IP_str)
+    chord.ChordNode = &chord.Node{
+      Identifier: ID,
+      IP: IP,
+    }
+    chord.ChordNode.IP = IP
+  	chord.ChordNode.Identifier = ID
 
-		// chord.ChordNode.IP = IP
-		// chord.ChordNode.Identifier = ID
-
-		go node_listen(IP)
+  	go node_listen(IP)
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
     //
 		// fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
@@ -48,5 +44,4 @@ func Test1(t *testing.T) {
 }
 
 // TODO:
-// type into terminal: go test -run Test1
 // fix binding error
