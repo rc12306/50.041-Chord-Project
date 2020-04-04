@@ -36,14 +36,14 @@ func Test1(t *testing.T) {
 			IP:         remoteNode_IP,
 		}
 
-		chord.ChordNode.IP = IP
-		chord.ChordNode.Identifier = ID
+		// chord.ChordNode.IP = IP
+		// chord.ChordNode.Identifier = ID
 
 		go node_listen(IP)
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
-
-		fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
-		fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
+    //
+		// fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+		// fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
   }
 }
 

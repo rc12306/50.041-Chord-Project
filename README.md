@@ -54,7 +54,6 @@ go run <FILE>.go
 ```
 
 **Running test cases:**
-To run 1 specific test file, e.g. `case1_test.go`:
 ```
-go test case1_test.go scan_ring.go
+go test -run Test1.go
 ```
