@@ -219,8 +219,8 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 		}
 		for _, oldNode := range node.successorList[:replicationFactor] {
 			if !containsNode(oldNode, repeatedReplicationNodes) {
-				for key, value := range replicatedKeys {
-					oldNode.DeleteRPC(key)
+				for key := range replicatedKeys {
+					oldNode.delRPC(key)
 				}
 			}
 		}
