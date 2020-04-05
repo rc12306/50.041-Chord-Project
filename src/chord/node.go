@@ -171,6 +171,8 @@ func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
 
 // not locked: functions calling updateSuccessorList must ensure successorLock is held before calling function
 func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
+	node.dataStoreLock.RLock()
+	defer node.dataStoreLock.RUnlock()
 	firstLiveSuccessor := node.successorList[firstLiveSuccessorIndex]
 	if !firstLiveSuccessor.ping() {
 		firstLiveSuccessorIndex++
@@ -185,6 +187,52 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 
 		copy(copyList[1:], newSuccessorList)
 		copyList[0] = firstLiveSuccessor
+		/*
+			Handling duplicated keys:
+				1. Get primary keys of node (i.e. non-replicated keys)
+				2. Delete keys from old replication nodes
+				3. Add keys to new replication nodes
+		*/
+		primaryKeys := make([]int, 0)
+		for key := range node.hashTable {
+			if BetweenLeftIncl(key, node.predecessor.Identifier, node.Identifier) {
+				primaryKeys = append(primaryKeys, key)
+			}
+		}
+		// get replicated keys
+		replicatedKeys := make(map[int]string)
+		for key, value := range node.hashTable {
+			if BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
+				replicatedKeys[key] = value
+			}
+		}
+		// check for nodes that still remain as replciation node
+		repeatedReplicationNodes := make([]*RemoteNode, replicationFactor)
+		for _, newNode := range copyList[:replicationFactor] {
+			if !containsNode(newNode, node.successorList[:replicationFactor]) {
+				for key, value := range replicatedKeys {
+					newNode.putRPC(key, value)
+				}
+			} else {
+				repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
+			}
+		}
+		for _, oldNode := range node.successorList[:replicationFactor] {
+			if !containsNode(oldNode, repeatedReplicationNodes) {
+				for key, value := range replicatedKeys {
+					oldNode.DeleteRPC(key)
+				}
+			}
+		}
 		node.successorList = copyList
 	}
+}
+
+func containsNode(node *RemoteNode, nodes []*RemoteNode) bool {
+	for _, replicationNode := range nodes {
+		if node.IP == replicationNode.IP {
+			return true
+		}
+	}
+	return false
 }
