@@ -9,6 +9,27 @@ import (
 // Test1 creates the chord ring structure
 func Test1(t *testing.T) {
 	fmt.Println("Starting test ...")
+
+	// init User IP info
+	fmt.Println("Gathering machine data ...")
+	myIp := chord.GetOutboundIP()
+	myIpStr := fmt.Sprint(ip2Long(myIp))
+	myId := chord.Hash(myIpStr)
+	fmt.Println("IP: ", myIp)
+	fmt.Println("ID: ", myId)
+
+	fmt.Println("Creating node ...")
+	chord.ChordNode = &chord.Node{
+		Identifier: myId,
+		IP:         myIp,
+	}
+	chord.ChordNode.IP = myIp
+	chord.ChordNode.Identifier = myId
+
+	fmt.Println("Listening to node ...")
+	go node_listen(myIp)
+
+	// Scan for IPs in network & chord ring
 	ipInChord := CheckRing()
 
 	if len(ipInChord) > 0 {
@@ -26,8 +47,11 @@ func Test1(t *testing.T) {
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
 		fmt.Println("Successfully joined chord ring!")
 	} else {
-		fmt.Println("No existing chord ring!\nCreating new chord ring ...")
+		fmt.Println("No existing chord ring!")
+
+		fmt.Println("Creating chord ring ...")
 		chord.ChordNode.CreateNodeAndJoin(nil)
+
 		fmt.Println("Sucessfully created chord ring!")
 	}
 
