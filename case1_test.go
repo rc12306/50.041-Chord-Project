@@ -4,6 +4,7 @@ import (
 	"chord/src/chord"
 	"fmt"
 	"testing"
+	"net/rpc"
 )
 
 // Test1 creates the chord ring structure
@@ -23,80 +24,56 @@ func Test1(t *testing.T) {
 		Identifier: myId,
 		IP:         myIp,
 	}
-	chord.ChordNode.IP = myIp
-	chord.ChordNode.Identifier = myId
-
-	fmt.Println("Listening to node ...")
 	go node_listen(myIp)
+	chord.ChordNode.CreateNodeAndJoin(nil)
 
 	// Scan for IPs in network & chord ring
-	ipInChord := CheckRing()
+	_, othersIp := NetworkIP()
+	fmt.Println("Found IP in network: ", othersIp)
 
-	if len(ipInChord) > 0 {
-		remoteIp := ipInChord[0]
-		fmt.Println("Attempting to join chord ring via node: ", remoteIp)
+	for _, s := range othersIp {
+		Ip := s
+		IpStr := fmt.Sprint(ip2Long(Ip))
+		Id := chord.Hash(IpStr)
 
-		// Generate remoteNode
-		remoteIpStr := fmt.Sprint(ip2Long(remoteIp))
-		remoteId := chord.Hash(remoteIpStr)
+		fmt.Println("Creating remote node from ", Ip)
 		remoteNode := &chord.RemoteNode{
-			Identifier: remoteId,
-			IP:         remoteIp,
+			Identifier: Id,
+			IP: Ip,
 		}
-
-		chord.ChordNode.CreateNodeAndJoin(remoteNode)
-		fmt.Println("Successfully joined chord ring!")
-	} else {
-		fmt.Println("No existing chord ring!")
-
-		fmt.Println("Creating chord ring ...")
-		chord.ChordNode.CreateNodeAndJoin(nil)
-
-		fmt.Println("Sucessfully created chord ring!")
+		_, err := rpc.Dial("tcp", remoteNode.IP+":8081")
+		if err == nil {
+			chord.ChordNode.CreateNodeAndJoin(remoteNode)
+			fmt.Println("IP in Ring: ", CheckRing())
+			break
+		} else {
+			fmt.Println("Unable to create remote node from ", Ip)
+		}
 	}
 
-	// // init User IP info
-	// IP_0 := chord.GetOutboundIP()
-	// IP_str_0 := fmt.Sprint(ip2Long(IP_0))
-	// ID_0 := chord.Hash(IP_str_0)
-
-	// // create initial node
-	// // all other nodes will join to this
-	// fmt.Println("Creating initial node...")
-	// fmt.Println("IP: ", IP_0)
-	// fmt.Println("ID: ", ID_0)
-	// /*remoteNode := &chord.RemoteNode{
-	// 	Identifier: ID_0,
-	// 	IP:         IP_0,
-	// }*/
-
-	// fmt.Println("Listening to node ...")
-	// go node_listen(IP_0)
-
-	// // add other IPs to first node
-	// _, othersIp := NetworkIP()
-	// for _, s := range othersIp {
-	// 	fmt.Println("Found IP in network: ", s)
-	// 	IP := s
-	// 	IP_str := fmt.Sprint(ip2Long(IP))
-	// 	ID := chord.Hash(IP_str)
-	// 	chord.ChordNode = &chord.Node{
-	// 		Identifier: ID,
-	// 		IP:         IP,
+	// if len(ipInChord) > 0 {
+	// 	remoteIp := ipInChord[0]
+	// 	fmt.Println("Attempting to join chord ring via node: ", remoteIp)
+	//
+	// 	// Generate remoteNode
+	// 	remoteIpStr := fmt.Sprint(ip2Long(remoteIp))
+	// 	remoteId := chord.Hash(remoteIpStr)
+	// 	remoteNode := &chord.RemoteNode{
+	// 		Identifier: remoteId,
+	// 		IP:         remoteIp,
 	// 	}
-	// 	chord.ChordNode.IP = IP
-	// 	chord.ChordNode.Identifier = ID
-
-	// 	fmt.Println("IP: ", IP)
-	// 	fmt.Println("ID: ", ID)
-
-	// 	fmt.Println("Listening for nodes again ...")
-	// 	go node_listen(IP)
-
-	// 	fmt.Println("Attempting to join node ...")
+	//
+	// 	chord.ChordNode.CreateNodeAndJoin(remoteNode)
+	// 	fmt.Println("Successfully joined chord ring!")
+	// } else {
+	// 	fmt.Println("No existing chord ring!")
+	//
+	// 	fmt.Println("Creating chord ring ...")
 	// 	chord.ChordNode.CreateNodeAndJoin(nil)
-	// 	//
-	// 	// fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
-	// 	// fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
-	//	}
+	//
+	// 	fmt.Println("Sucessfully created chord ring!")
+	// }
+
+
+
 }
