@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"net/rpc"
+	"strings"
+	"time"
 )
 
 // Test1 creates the chord ring structure
@@ -33,6 +35,10 @@ func Test1(t *testing.T) {
 
 	for _, s := range othersIp {
 		Ip := s
+		if (strings.HasSuffix(fmt.Sprintf(Ip), "1")) {
+			fmt.Println("Invalid node: ", Ip)
+			continue
+		}
 		IpStr := fmt.Sprint(ip2Long(Ip))
 		Id := chord.Hash(IpStr)
 
@@ -41,13 +47,14 @@ func Test1(t *testing.T) {
 			Identifier: Id,
 			IP: Ip,
 		}
+
+		time.Sleep(Id * time.Millisecond)
 		_, err := rpc.Dial("tcp", remoteNode.IP+":8081")
+		fmt.Println("Error here: ", err)
 		if err == nil {
 			chord.ChordNode.CreateNodeAndJoin(remoteNode)
 			fmt.Println("IP in Ring: ", CheckRing())
 			break
-		} else {
-			fmt.Println("Unable to create remote node from ", Ip)
 		}
 	}
 
