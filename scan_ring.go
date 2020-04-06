@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	// "fmt"
 	"net"
 	"os/exec"
 
@@ -111,11 +111,11 @@ func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
 }
 
 func NetworkIP() (string, []string) {
-	fmt.Println("Searching for IP of nodes in network ... ...")
+	// fmt.Println("Searching for IP of nodes in network ... ...")
 
 	basicIP := GetOutboundIP()
 	myIP := basicIP + "/24"
-	fmt.Println(myIP)
+	// fmt.Println(myIP)
 	hosts, _ := Hosts(myIP)
 	concurrentMax := 100
 	pingChan := make(chan string, concurrentMax)
@@ -143,7 +143,7 @@ func NetworkIP() (string, []string) {
 		}
 	}
 
-	fmt.Println("Search completed!")
+	// fmt.Println("Search completed!")
 
 	return basicIP, ipSlice
 }
@@ -171,12 +171,12 @@ func Ping(senderIP string, receiverIP string) bool {
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
 		log.Println("Connection error:", err)
-		fmt.Println(receiverIP, " not in chord ring")
+		// fmt.Println(receiverIP, " not in chord ring")
 		return false
 	}
 	// fmt.Println(reply.SenderIP + " is alive. ")
 	client.Close()
-	fmt.Println(receiverIP, " in chord ring")
+	// fmt.Println(receiverIP, " in chord ring")
 	return true
 }
 
@@ -185,21 +185,21 @@ func CheckRing() []string {
 	var myIp string
 	var othersIp []string
 
-	fmt.Println("Initiating IP scan ...")
+	// fmt.Println("Initiating IP scan ...")
 	myIp, othersIp = NetworkIP()
-	fmt.Println("Found IP in network: ", othersIp)
+	// fmt.Println("Found IP in network: ", othersIp)
 
 	for i := 0; i < len(othersIp); i++ {
-		fmt.Println("Checking ", othersIp[i], " if in chord ring ...")
+		// fmt.Println("Checking ", othersIp[i], " if in chord ring ...")
 		checkIp := Ping(myIp, othersIp[i])
 
 		if checkIp {
 			ipInRing = append(ipInRing, othersIp[i])
-			fmt.Println(othersIp[i], " is in chord ring!")
+			// fmt.Println(othersIp[i], " is in chord ring!")
 		}
 	}
 
-	fmt.Println(ipInRing, " are the IPs of nodes in chord ring!!!")
+	// fmt.Println(ipInRing, " are the IPs of nodes in chord ring!!!")
 
 	return ipInRing
 }

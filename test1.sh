@@ -2,10 +2,10 @@
 
 # rebuild
 docker-compose build
-docker-compose up -d --scale node=3
+docker-compose up -d --scale node=5
 
 # this script runs Test1 in 3 Docker containers
-for i in 1 2 3
+for i in 1 2 3 4 5
 do
   gnome-terminal --command "bash -c 'docker exec -it 50041-chord-project_node_$i go test -run Test1; $SHELL'"
 done
