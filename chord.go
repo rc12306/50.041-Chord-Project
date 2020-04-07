@@ -68,15 +68,10 @@ func main() {
 		Leave 	l     		: Leave the current chord network.
 		Find	f <fname>	: Find a file.
 		Add     a <fname>	: Add a file.
-<<<<<<< HEAD
-		Create 	c     		: Create a new chord network. (Deprecated)
-		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
-=======
 
 		Create 	c     		: Create a new chord network. (Deprecated)
 		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
 
->>>>>>> 5be3d54f51bcf047ad076022dd3bf1c1024f30d9
 		Your IP is : ` + IP)
 	fmt.Print(">>>")
 
