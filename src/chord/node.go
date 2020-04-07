@@ -143,6 +143,7 @@ func (node *Node) checkPredecessor() {
 func (node *Node) findSuccessor(id int) *RemoteNode {
 	node.successorLock.RLock()
 	if BetweenRightIncl(id, node.Identifier, node.successorList[0].Identifier) {
+		node.successorLock.RUnlock()
 		return node.successorList[0]
 	}
 	node.successorLock.RUnlock()
@@ -210,8 +211,10 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 		repeatedReplicationNodes := make([]*RemoteNode, replicationFactor)
 		for _, newNode := range copyList[:replicationFactor] {
 			if !containsNode(newNode, node.successorList[:replicationFactor]) {
-				for key, value := range replicatedKeys {
-					newNode.putRPC(key, value)
+				if node != nil {
+					for key, value := range replicatedKeys {
+						newNode.putRPC(key, value)
+					}
 				}
 			} else {
 				repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
@@ -219,8 +222,10 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 		}
 		for _, oldNode := range node.successorList[:replicationFactor] {
 			if !containsNode(oldNode, repeatedReplicationNodes) {
-				for key := range replicatedKeys {
-					oldNode.delRPC(key)
+				if node != nil {
+					for key := range replicatedKeys {
+						oldNode.delRPC(key)
+					}
 				}
 			}
 		}
@@ -229,8 +234,11 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 }
 
 func containsNode(node *RemoteNode, nodes []*RemoteNode) bool {
+	if node == nil {
+		return false
+	}
 	for _, replicationNode := range nodes {
-		if node.IP == replicationNode.IP {
+		if replicationNode != nil && node.IP == replicationNode.IP {
 			return true
 		}
 	}
