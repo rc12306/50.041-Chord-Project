@@ -109,8 +109,6 @@ func NetworkIP() (string, []string) {
 		// fmt.Println("sent: " + ip)
 	}
 
-	fmt.Println("Debug 1:", doneChan)
-
 	alives := <-doneChan
 
 	var ipSlice []string
