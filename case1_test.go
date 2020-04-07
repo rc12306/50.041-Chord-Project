@@ -14,8 +14,7 @@ func Test1(t *testing.T) {
 	// init User IP info
 	fmt.Println("Gathering machine data ...")
 	myIp := chord.GetOutboundIP()
-	myIpStr := fmt.Sprint(ip2Long(myIp))
-	myId := chord.Hash(myIpStr)
+	myId := chord.Hash(myIp)
 	fmt.Println("IP: ", myIp)
 	fmt.Println("ID: ", myId)
 
@@ -42,8 +41,7 @@ func Test1(t *testing.T) {
 		chord.ChordNode.CreateNodeAndJoin(nil)
 	} else {
 		Ip := nodesInRing[0]
-		IpStr := fmt.Sprint(ip2Long(Ip))
-		Id := chord.Hash(IpStr)
+		Id := chord.Hash(Ip)
 		remoteNode := &chord.RemoteNode{
 			Identifier: Id,
 			IP:         Ip,
