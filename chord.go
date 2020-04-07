@@ -123,8 +123,7 @@ func main() {
 				ipSlice, _ := CheckRing()
 				fmt.Println(ipSlice)
 
-				remoteNode_IP := inputs[1] //String of IP
-				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+				remoteNode_IP := inputs[1]
 
 				_, found := Find(ipSlice, remoteNode_IP)
 				if !found {
@@ -133,7 +132,7 @@ func main() {
 					break
 				}
 
-				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
+				remoteNode_ID := chord.Hash(remoteNode_IP)
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
@@ -164,11 +163,23 @@ func main() {
 				ipSlice, _ := CheckRing()
 				fmt.Println(ipSlice)
 				ringSize := len(ipSlice)
+
+				if ringSize == 0 {
+					chord.ChordNode.IP = IP
+					chord.ChordNode.Identifier = ID
+
+					go node_listen(IP)
+					chord.ChordNode.CreateNodeAndJoin(nil)
+
+					fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
+
+					fmt.Print("\n>>>")
+					break
+				}
+
 				remoteNode_IP := ipSlice[rand.Intn(ringSize)]
 
-				//remoteNode_IP := inputs[1] //String of IP
-				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
-				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
+				remoteNode_ID := chord.Hash(remoteNode_IP)
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
