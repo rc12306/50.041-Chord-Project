@@ -5,6 +5,8 @@ import (
 	"net"
 	"os/exec"
 
+	// "os/exec"
+
 	// "errors"
 	"log"
 	// "net"
@@ -67,7 +69,7 @@ func Hosts(cidr string) ([]string, error) {
 	return ips[1 : len(ips)-1], nil
 }
 
-//  http://play.golang.org/p/m8TNTtygK0
+//http://play.golang.org/p/m8TNTtygK0
 func inc(ip net.IP) {
 	for j := len(ip) - 1; j >= 0; j-- {
 		ip[j]++
@@ -109,7 +111,7 @@ func receivePong(pongNum int, pongChan <-chan Pong, doneChan chan<- []Pong) {
 }
 
 func NetworkIP() (string, []string) {
-	fmt.Println("Searching for IP of nodes in network ... ...")
+	// fmt.Println("Searching for IP of nodes in network ... ...")
 
 	basicIP := GetOutboundIP()
 	myIP := basicIP + "/24"
@@ -128,8 +130,10 @@ func NetworkIP() (string, []string) {
 
 	for _, ip := range hosts {
 		pingChan <- ip
-		//fmt.Println("sent: " + ip)
+		// fmt.Println("sent: " + ip)
 	}
+
+	fmt.Println("Debug 1:", doneChan)
 
 	alives := <-doneChan
 
@@ -156,7 +160,7 @@ func Ping(senderIP string, receiverIP string) bool {
 	client, err := rpc.Dial("tcp", receiverIP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
-		log.Printf("Dialing:", err)
+		log.Println("Dialing:", err)
 		return false
 	}
 
@@ -168,18 +172,19 @@ func Ping(senderIP string, receiverIP string) bool {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Connection error:", err)
-		fmt.Println(receiverIP, " not in chord ring")
+		log.Println("Connection error:", err)
+		// fmt.Println(receiverIP, " not in chord ring")
 		return false
 	}
 	// fmt.Println(reply.SenderIP + " is alive. ")
 	client.Close()
-	fmt.Println(receiverIP, " in chord ring")
+	// fmt.Println(receiverIP, " in chord ring")
 	return true
 }
 
-func CheckRing() []string {
+func CheckRing() ([]string, []string) {
 	var ipInRing []string
+	var ipNotinRing []string
 	var myIp string
 	var othersIp []string
 
@@ -193,16 +198,18 @@ func CheckRing() []string {
 
 		if checkIp {
 			ipInRing = append(ipInRing, othersIp[i])
-			fmt.Println(othersIp[i], " is in chord ring!")
+			// fmt.Println(othersIp[i], " is in chord ring!")
+		} else {
+			ipNotinRing = append(ipNotinRing, othersIp[i])
 		}
 	}
 
-	fmt.Println(ipInRing, " are the IPs of nodes in chord ring!!!")
+	// fmt.Println(ipInRing, " are the IPs of nodes in chord ring!!!")
 
-	return ipInRing
+	return ipInRing, ipNotinRing
 }
 
-func main() {
-	ipInChordRing := CheckRing()
-	fmt.Println(ipInChordRing)
-}
+// func main() {
+// 	ipInChordRing := CheckRing()
+// 	fmt.Println(ipInChordRing)
+// }

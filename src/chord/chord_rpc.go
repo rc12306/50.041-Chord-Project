@@ -3,7 +3,6 @@ package chord
 import (
 	"errors"
 	"log"
-
 	// "net"
 	"net/rpc"
 	// "time"
@@ -113,15 +112,6 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 			*reply = Packet{"Value", "File already exist in the table", 0, nil, ChordNode.IP}
 		}
 		return nil
-	case "delKeyValue":
-		// Call node to put file (and its identifier) into hashtable
-		delSuccess := handleDelKeyValue(payload.MsgInt)
-		if delSuccess != nil {
-			*reply = Packet{"Value", "Success", 0, nil, ChordNode.IP}
-		} else {
-			*reply = Packet{"Value", "File has already been removed from hash table", 0, nil, ChordNode.IP}
-		}
-		return nil
 	default:
 		// Packet Pong, Answer, Value will enter this case
 		return nil
@@ -147,7 +137,7 @@ func (remoteNode *RemoteNode) ping() bool {
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		log.Printf("Remote node is not alive")
 		return false
 	}
 
@@ -159,7 +149,7 @@ func (remoteNode *RemoteNode) ping() bool {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		log.Printf("Remote node is not alive")
 		return false
 	}
 	// fmt.Println(reply.SenderIP + " is alive. ")
@@ -436,55 +426,6 @@ func handlePutKeyValue(key int, value string) error {
 	if err != nil {
 		log.Println(err)
 		return errors.New("File already exist in the table")
-	}
-	return nil
-}
-
-/*
-	Set up adding files
-	Use by node
-	Args:
-		key:	hashed value of file name
-		value:	file name
-	return error (if any)
-*/
-func (remoteNode *RemoteNode) delRPC(key int) error {
-	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
-		return errors.New("Remote node has not been set: unable to make RPC call")
-	}
-	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
-	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
-		return errors.New("Remote node has not started accepting connections: unable to make RPC call")
-	}
-
-	// set up arguments
-	payload := &Packet{"delKeyValue", "", key, nil, ChordNode.IP}
-	var reply Packet
-
-	// and make an rpc call
-	err = client.Call("Listener.Receive", payload, &reply)
-	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
-		return errors.New("Remote node closed connection abruptly: unable to complete RPC call")
-	}
-
-	// Check that put was successful
-	if reply.Msg != "Success" {
-		return errors.New("File has already been removed")
-	}
-
-	client.Close()
-	return nil
-}
-
-func handleDelKeyValue(key int) error {
-	// Call node to make changes
-	err := ChordNode.delete(key)
-	if err != nil {
-		log.Println(err)
-		return errors.New("File has already been removed")
 	}
 	return nil
 }
