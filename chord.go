@@ -3,60 +3,18 @@ package main
 import (
 	"bufio"
 	"chord/src/chord"
-
-	// "crypto/sha1"     //hash()
-	"encoding/binary" //ip2int()
 	"fmt"
-	"log" //GetOutboundIP()
-	"net" //GetOutboundIP()
-	"os"
-
-	//"time"
-	"bytes" //ip2Long()
-	//"reflect" //testing
+	"log"
+	"math/rand"
+	"net"
 	"net/rpc"
+	"os"
 	"strings"
 )
 
 var LISTENING_PORT int = 8081
 
 /* --------------------------------DEPENDENCIES-----------------------*/
-
-// Get preferred outbound ip of this machine as net.IP
-// func GetOutboundIP() string {
-// 	conn, err := net.Dial("udp", "8.8.8.8:80")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer conn.Close()
-
-// 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-// 	return localAddr.IP.String()
-// }
-
-// convert net.IP to int
-func ip2int(ip net.IP) uint32 {
-	if len(ip) == 16 {
-		return binary.BigEndian.Uint32(ip[12:16])
-	}
-	return binary.BigEndian.Uint32(ip)
-}
-
-// convert string IP to int
-func ip2Long(ip string) uint32 {
-	var long uint32
-	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
-	return long
-}
-
-// hash a string into int
-// func hash(key string) int {
-// 	hash := sha1.New()
-// 	hash.Write([]byte(key))
-// 	result := hash.Sum(nil)
-// 	return int(binary.BigEndian.Uint64(result))
-// }
 
 // LISTEN
 func node_listen(hostIP string) {
@@ -79,14 +37,22 @@ func node_listen(hostIP string) {
 	return
 }
 
+func Find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
 /* --------------------------------DEPENDENCIES-----------------------*/
 
 func main() {
 
 	// Init USER IP infos
-	IP := chord.GetOutboundIP()       //String of IP
-	IP_str := fmt.Sprint(ip2Long(IP)) //String of decimal IP
-	ID := chord.Hash(IP_str)          //Hashed decimal IP
+	IP := chord.GetOutboundIP() //String of IP
+	ID := chord.Hash(IP)        //Hashed decimal IP
 
 	chord.ChordNode = &chord.Node{
 		Identifier: -1,
@@ -96,12 +62,21 @@ func main() {
 		`
 		Welcome to CHORD!
 		
-		Create 	c     		: Create a new chord network.
-		Join	j <id>		: Join the chord network by specifying id.
+		Scan    s   		: Scan network for available nodes.
+		Init    i   		: Create and Join.
 		Print	p      		: Print node info.
 		Leave 	l     		: Leave the current chord network.
 		Find	f <fname>	: Find a file.
-		
+		Add     a <fname>	: Add a file.
+<<<<<<< HEAD
+		Create 	c     		: Create a new chord network. (Deprecated)
+		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
+=======
+
+		Create 	c     		: Create a new chord network. (Deprecated)
+		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
+
+>>>>>>> 5be3d54f51bcf047ad076022dd3bf1c1024f30d9
 		Your IP is : ` + IP)
 	fmt.Print(">>>")
 
@@ -124,21 +99,16 @@ func main() {
 					break
 				}
 
+				fmt.Println("Deprecated function!")
+
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
+
 				go node_listen(IP)
 				chord.ChordNode.CreateNodeAndJoin(nil)
+
 				fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
 
-				fmt.Print("\n>>>")
-
-			case "p": // PRINT NODE DATA
-				if chord.ChordNode.Identifier == -1 {
-					fmt.Print("Invalid node.\n>>>")
-					break
-				}
-
-				chord.ChordNode.PrintNode()
 				fmt.Print("\n>>>")
 
 			case "j": // JOIN A NETWORK
@@ -153,13 +123,27 @@ func main() {
 					break
 				}
 
-				remoteNode_IP := inputs[1]                              //String of IP
-				remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
-				remoteNode_ID := chord.Hash(remoteNode_IP_str)          //Hash of decimal IP
+				fmt.Println("Deprecated function!")
+
+				ipSlice, _ := chord.CheckRing()
+				fmt.Println(ipSlice)
+
+				remoteNode_IP := inputs[1] //String of IP
+				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+
+				_, found := Find(ipSlice, remoteNode_IP)
+				if !found {
+					fmt.Println("IP not in ring nework.")
+					fmt.Print("\n>>>")
+					break
+				}
+
+				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
 				}
+
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
 
@@ -171,15 +155,74 @@ func main() {
 
 				fmt.Print("\n>>>")
 
+			case "s": // SCAN IP
+				ipSlice, _ := chord.CheckRing()
+				fmt.Println(ipSlice)
+				fmt.Print("\n>>>")
+
+			case "i": // INITIALISE - Create Node and Join
+
+				if chord.ChordNode.Identifier != -1 {
+					fmt.Print("Node already exists.\n>>>")
+					break
+				}
+
+				ipSlice, _ := chord.CheckRing()
+				fmt.Println(ipSlice)
+				ringSize := len(ipSlice)
+
+				if ringSize == 0 {
+					chord.ChordNode.IP = IP
+					chord.ChordNode.Identifier = ID
+
+					go node_listen(IP)
+					chord.ChordNode.CreateNodeAndJoin(nil)
+
+					fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
+
+					fmt.Print("\n>>>")
+					break
+				}
+
+				remoteNode_IP := ipSlice[rand.Intn(ringSize)]
+
+				remoteNode_ID := chord.Hash(remoteNode_IP)
+				remoteNode := &chord.RemoteNode{
+					Identifier: remoteNode_ID,
+					IP:         remoteNode_IP,
+				}
+
+				chord.ChordNode.IP = IP
+				chord.ChordNode.Identifier = ID
+
+				go node_listen(IP)
+				chord.ChordNode.CreateNodeAndJoin(remoteNode)
+
+				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
+
+				fmt.Print("\n>>>")
+
+			case "p": // PRINT NODE DATA
+				if chord.ChordNode.Identifier == -1 {
+					fmt.Print("Invalid node.\n>>>")
+					break
+				}
+
+				chord.ChordNode.PrintNode()
+				fmt.Print("\n>>>")
+
 			case "l": // LEAVE A NETWORK
 				if chord.ChordNode.Identifier == -1 {
 					fmt.Print("Invalid node.\n>>>")
 					break
 				}
+
 				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
-				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
+				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
+				os.Exit(1)
 
 			case "f": // FIND A FILE BY FILENAME
 				if chord.ChordNode.Identifier == -1 {
@@ -195,12 +238,29 @@ func main() {
 
 				inputs = inputs[1:]
 				filename := strings.Join(inputs, " ")
-				filename_hash := fmt.Sprint(chord.Hash(filename))
-				fmt.Print("	" + filename + " (" + filename_hash + ")")
+				fmt.Print("	" + filename)
 
-				// Step 1: Check own hash table.
-				// Step 2: Forward query. | Obtain query.
-				// (Still waiting for connection.)
+				chord.ChordNode.FindFile(filename)
+
+				fmt.Print("\n>>>")
+
+			case "a": // ADD A FILE BY FILENAME
+				if chord.ChordNode.Identifier == -1 {
+					fmt.Print("Invalid node.\n>>>")
+					break
+				}
+
+				if len(inputs) <= 1 {
+					fmt.Print("Missing Variable(s)\n>>>")
+					break
+				}
+				fmt.Print("Node (" + IP + ") " + fmt.Sprint(ID) + " adding file: \n")
+
+				inputs = inputs[1:]
+				filename := strings.Join(inputs, " ")
+				fmt.Print("	" + filename)
+
+				chord.ChordNode.AddFile(filename)
 
 				fmt.Print("\n>>>")
 
