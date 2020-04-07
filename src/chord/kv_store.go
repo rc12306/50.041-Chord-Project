@@ -12,7 +12,7 @@ func (node *Node) get(hashedFile int) (string, error) {
 	defer node.dataStoreLock.RUnlock()
 	// Check if key-value pair exists
 	// value is the value of hashedFile while ok is a bool
-	// if hashFile does not exist, ok is False
+	// if hashFile does not exist, keyExists is False
 	value, keyExists := node.hashTable[hashedFile]
 	if keyExists {
 		return value, nil
@@ -25,9 +25,6 @@ func (node *Node) get(hashedFile int) (string, error) {
 func (node *Node) put(key int, value string) error {
 	node.dataStoreLock.Lock()
 	defer node.dataStoreLock.Unlock()
-	// Check if key-value pair exists
-	// keyExists is a bool
-	// if hashFile does not exist, keyExists is False
 	_, keyExists := node.hashTable[key]
 	if keyExists {
 		return errors.New("Error putting file " + value + " into hashtable: identifier " + strconv.Itoa(key) + " already exists in hash table")

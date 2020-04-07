@@ -3,6 +3,7 @@ package chord
 import (
 	"errors"
 	"log"
+
 	// "net"
 	"net/rpc"
 	// "time"
@@ -106,7 +107,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "putKeyValue":
 		// Call node to put file (and its identifier) into hashtable
 		putSuccess := handlePutKeyValue(payload.MsgInt, payload.Msg)
-		if putSuccess != nil {
+		if putSuccess == nil {
 			*reply = Packet{"Value", "Success", 0, nil, ChordNode.IP}
 		} else {
 			*reply = Packet{"Value", "File already exist in the table", 0, nil, ChordNode.IP}
@@ -426,6 +427,7 @@ func handlePutKeyValue(key int, value string) error {
 	if err != nil {
 		log.Println(err)
 		return errors.New("File already exist in the table")
+	} else {
+		return nil
 	}
-	return nil
 }
