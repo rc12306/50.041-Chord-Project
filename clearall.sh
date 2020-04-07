@@ -4,7 +4,7 @@
 docker rm -f $(sudo docker ps -a -q)
 
 # prune docker systems
-docker system prune -a
+docker system prune -af
 
 # clear terminal
 clear
