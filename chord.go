@@ -14,6 +14,7 @@ import (
 	//"time"
 	"bytes" //ip2Long()
 	//"reflect" //testing
+	"math/rand"
 	"net/rpc"
 	"strings"
 )
@@ -154,9 +155,9 @@ func main() {
 
 				fmt.Println("Deprecated function!")
 
-				remoteNode_IP := inputs[1]                              //String of IP
-				remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
-				remoteNode_ID := chord.Hash(remoteNode_IP_str)          //Hash of decimal IP
+				remoteNode_IP := inputs[1] //String of IP
+				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
@@ -173,12 +174,7 @@ func main() {
 				fmt.Print("\n>>>")
 
 			case "s": // SCAN IP
-				basicIP, ipSlice := chord.NetworkIP()
-				_ = basicIP
-				fmt.Println(ipSlice)
-				// if len(ipSlice) == 0 {
-				// 	fmt.Println("Empty")
-				// }
+				ipSlice := CheckRing()
 				fmt.Print("\n>>>")
 
 			case "i": // INITIALISE - Create Node and Join
@@ -188,15 +184,19 @@ func main() {
 					break
 				}
 
-				if len(inputs) <= 1 {
-					fmt.Print("Missing Variable(s)\n>>>")
-					break
-				}
-				// TODO: use scan-ip to find existing nodes
-				// TODO: how to decide which to use as remote node?
-				remoteNode_IP := inputs[1]                              //String of IP
-				remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
-				remoteNode_ID := chord.Hash(remoteNode_IP_str)          //Hash of decimal IP
+				// if len(inputs) <= 1 {
+				// 	fmt.Print("Missing Variable(s)\n>>>")
+				// 	break
+				// }
+
+				ipSlice := CheckRing()
+				fmt.Println(ipSlice)
+				ringSize := len(ipSlice)
+				remoteNode_IP := ipSlice[rand.Intn(ringSize)]
+
+				//remoteNode_IP := inputs[1] //String of IP
+				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
@@ -228,7 +228,8 @@ func main() {
 					break
 				}
 
-				// TODO: use shutdown() to find existing nodes
+				// TODO: use shutdown()
+				// TODO: close node_listen goroutine()
 				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
