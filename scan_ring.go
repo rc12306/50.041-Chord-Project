@@ -182,8 +182,9 @@ func Ping(senderIP string, receiverIP string) bool {
 	return true
 }
 
-func CheckRing() []string {
+func CheckRing() ([]string, []string) {
 	var ipInRing []string
+	var ipNotinRing []string
 	var myIp string
 	var othersIp []string
 
@@ -198,15 +199,18 @@ func CheckRing() []string {
 		if checkIp {
 			ipInRing = append(ipInRing, othersIp[i])
 			// fmt.Println(othersIp[i], " is in chord ring!")
+		} else {
+			ipNotinRing = append(ipNotinRing, othersIp[i])
 		}
 	}
 
 	// fmt.Println(ipInRing, " are the IPs of nodes in chord ring!!!")
 
-	return ipInRing
+	return ipInRing, ipNotinRing
 }
 
-// func main() {
-// 	ipInChordRing := CheckRing()
-// 	fmt.Println(ipInChordRing)
-// }
+func main() {
+	ipInChordRing, ipNotinRing := CheckRing()
+	fmt.Println("Nodes in chord ring: ", ipInChordRing)
+	fmt.Println("Nodes not in ring: ", ipNotinRing)
+}
