@@ -3,61 +3,18 @@ package main
 import (
 	"bufio"
 	"chord/src/chord"
-
-	// "crypto/sha1"     //hash()
-	"encoding/binary" //ip2int()
 	"fmt"
-	"log" //GetOutboundIP()
-	"net" //GetOutboundIP()
-	"os"
-
-	//"time"
-	"bytes" //ip2Long()
-	//"reflect" //testing
+	"log"
 	"math/rand"
+	"net"
 	"net/rpc"
+	"os"
 	"strings"
 )
 
 var LISTENING_PORT int = 8081
 
 /* --------------------------------DEPENDENCIES-----------------------*/
-
-// Get preferred outbound ip of this machine as net.IP
-// func GetOutboundIP() string {
-// 	conn, err := net.Dial("udp", "8.8.8.8:80")
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer conn.Close()
-
-// 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-
-// 	return localAddr.IP.String()
-// }
-
-// convert net.IP to int
-func ip2int(ip net.IP) uint32 {
-	if len(ip) == 16 {
-		return binary.BigEndian.Uint32(ip[12:16])
-	}
-	return binary.BigEndian.Uint32(ip)
-}
-
-// convert string IP to int
-func ip2Long(ip string) uint32 {
-	var long uint32
-	binary.Read(bytes.NewBuffer(net.ParseIP(ip).To4()), binary.BigEndian, &long)
-	return long
-}
-
-// hash a string into int
-// func hash(key string) int {
-// 	hash := sha1.New()
-// 	hash.Write([]byte(key))
-// 	result := hash.Sum(nil)
-// 	return int(binary.BigEndian.Uint64(result))
-// }
 
 // LISTEN
 func node_listen(hostIP string) {
@@ -94,9 +51,8 @@ func Find(slice []string, val string) (int, bool) {
 func main() {
 
 	// Init USER IP infos
-	IP := chord.GetOutboundIP()       //String of IP
-	IP_str := fmt.Sprint(ip2Long(IP)) //String of decimal IP
-	ID := chord.Hash(IP_str)          //Hashed decimal IP
+	IP := chord.GetOutboundIP() //String of IP
+	ID := chord.Hash(IP)        //Hashed decimal IP
 
 	chord.ChordNode = &chord.Node{
 		Identifier: -1,
