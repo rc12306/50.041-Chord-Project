@@ -103,10 +103,15 @@ func main() {
 		Leave 	l     		: Leave the current chord network.
 		Find	f <fname>	: Find a file.
 		Add     a <fname>	: Add a file.
+<<<<<<< HEAD
 
 		Create 	c     		: Create a new chord network. (Deprecated)
 		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
 
+=======
+		Create 	c     		: Create a new chord network. (Deprecated)
+		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
+>>>>>>> 9211b10cc34dc8d8af0731660ff5976cf180baaa
 		Your IP is : ` + IP)
 	fmt.Print(">>>")
 
@@ -174,7 +179,12 @@ func main() {
 				fmt.Print("\n>>>")
 
 			case "s": // SCAN IP
+<<<<<<< HEAD
 				ipSlice := CheckRing()
+=======
+				ipSlice, _ := chord.CheckRing()
+				fmt.Println(ipSlice)
+>>>>>>> 9211b10cc34dc8d8af0731660ff5976cf180baaa
 				fmt.Print("\n>>>")
 
 			case "i": // INITIALISE - Create Node and Join
@@ -189,7 +199,11 @@ func main() {
 				// 	break
 				// }
 
+<<<<<<< HEAD
 				ipSlice := CheckRing()
+=======
+				ipSlice, _ := chord.CheckRing()
+>>>>>>> 9211b10cc34dc8d8af0731660ff5976cf180baaa
 				fmt.Println(ipSlice)
 				ringSize := len(ipSlice)
 				remoteNode_IP := ipSlice[rand.Intn(ringSize)]
