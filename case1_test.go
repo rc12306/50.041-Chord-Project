@@ -4,7 +4,6 @@ import (
 	"chord/src/chord"
 	"fmt"
 	"testing"
-	"time"
 )
 
 // Test1 creates the chord ring structure
@@ -18,41 +17,59 @@ func Test1(t *testing.T) {
 	fmt.Println("IP: ", myIp)
 	fmt.Println("ID: ", myId)
 
+	// Scan for IPs in network
+	_, othersIp := chord.NetworkIP()
+	fmt.Println("Found IP in network: ", othersIp)
+
+	// // Delay according to ID of node to avoid concurrency issues
+	// tDelay := time.Duration(myId) * time.Second
+	// fmt.Println("Wait for ", tDelay)
+	// time.Sleep(tDelay)
+
+	fmt.Println("Looking for IPs in ring...")
+	nodesInRing, _ := chord.CheckRing()
+	fmt.Println("Current IPs in Ring: ", nodesInRing)
+
 	fmt.Println("Creating node ...")
 	chord.ChordNode = &chord.Node{
 		Identifier: myId,
 		IP:         myIp,
 	}
+	fmt.Println("Activating node ...")
 	go node_listen(myIp)
 
-	// Scan for IPs in network & chord ring
-	_, othersIp := chord.NetworkIP()
-	fmt.Println("Found IP in network: ", othersIp)
-
-	// Delay according to ID of node to avoid concurrency issues
-	fmt.Println("Wait for ", time.Duration(myId*100)*time.Millisecond)
-	time.Sleep(time.Duration(myId) * 100 * time.Millisecond)
-
-	fmt.Println("Looking for other IPs in ring...")
-	nodesInRing, _ := chord.CheckRing()
-	fmt.Println("Current IPs in Ring: ", nodesInRing)
+	// Create/Join ring
 	if len(nodesInRing) < 1 {
+		// Chord ring NOT exists
+		// Create new ring
 		fmt.Println("Creating node at ", myIp)
 		chord.ChordNode.CreateNodeAndJoin(nil)
 	} else {
+		// Chord ring exists
+		// Join chord ring via a node in the ring
 		Ip := nodesInRing[0]
 		Id := chord.Hash(Ip)
 		remoteNode := &chord.RemoteNode{
 			Identifier: Id,
 			IP:         Ip,
 		}
+
+		chord.ChordNode.IP = Ip
+		chord.ChordNode.Identifier = Id
+
 		fmt.Println("Joining node at ", Ip)
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
 	}
 
+	// Update new chord ring
 	ipRing, ipNot := chord.CheckRing()
 	fmt.Println("IPs in ring: ", ipRing)
 	fmt.Println("IPs NOT in ring: ", ipNot)
+
+	// // Delay according to ensure that all nodes enters ring before test ends
+	// eDelay := time.Duration(90) * time.Second
+	// fmt.Println("Wait for ", eDelay)
+	// time.Sleep(eDelay)
 
 	// // add remote nodes to current node
 	// for _, s := range othersIp {
