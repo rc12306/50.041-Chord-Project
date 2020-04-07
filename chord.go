@@ -80,6 +80,15 @@ func node_listen(hostIP string) {
 	return
 }
 
+func Find(slice []string, val string) (int, bool) {
+	for i, item := range slice {
+		if item == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
 /* --------------------------------DEPENDENCIES-----------------------*/
 
 func main() {
@@ -155,8 +164,18 @@ func main() {
 
 				fmt.Println("Deprecated function!")
 
+				ipSlice, _ := CheckRing()
+				fmt.Println(ipSlice)
+
 				remoteNode_IP := inputs[1] //String of IP
 				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+
+				_, found := Find(ipSlice, remoteNode_IP)
+				if !found {
+					fmt.Println("IP not in ring nework.")
+					fmt.Print("\n>>>")
+					break
+				}
 
 				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
 				remoteNode := &chord.RemoteNode{
@@ -185,11 +204,6 @@ func main() {
 					fmt.Print("Node already exists.\n>>>")
 					break
 				}
-
-				// if len(inputs) <= 1 {
-				// 	fmt.Print("Missing Variable(s)\n>>>")
-				// 	break
-				// }
 
 				ipSlice, _ := CheckRing()
 				fmt.Println(ipSlice)
@@ -230,12 +244,11 @@ func main() {
 					break
 				}
 
-				// TODO: use shutdown()
-				// TODO: close node_listen goroutine()
 				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
-				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + "." + "\n>>>")
+				fmt.Print("Left chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
+				os.Exit(1)
 
 			case "f": // FIND A FILE BY FILENAME
 				if chord.ChordNode.Identifier == -1 {
