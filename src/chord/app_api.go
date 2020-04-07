@@ -64,17 +64,19 @@ func (node *Node) AddFile(fileName string) {
 	err := nodeStored.putRPC(keyIdentifier, fileName)
 	if err == nil {
 		fmt.Println(fileName, "has been successfully put into Node", nodeStored.Identifier, "("+nodeStored.IP+")")
-		fmt.Println("Replciating key across nodes for", fileName)
+		fmt.Println("Repliciating key across nodes for", fileName)
 		successorList, _ := nodeStored.getSuccessorListRPC()
-		for index, successorNode := range successorList[:replicationFactor] {
-			err := successorNode.putRPC(keyIdentifier, fileName)
-			if err == nil {
+		replicationNodes := pruneList(nodeStored.IP, successorList[:replicationFactor])
+		for index, successorNode := range replicationNodes {
+			replicationErr := successorNode.putRPC(keyIdentifier, fileName)
+			if replicationErr == nil {
 				fmt.Println("Successfully replicated file", fileName, "in successor", index, "of", nodeStored.Identifier)
 			} else {
 				fmt.Println("Failed to replicate file", fileName, "in successor", index, "of", nodeStored.Identifier)
 			}
 		}
 	} else {
+		fmt.Println(err)
 		fmt.Println("Failed to add", fileName, "into the Chord ring")
 	}
 }

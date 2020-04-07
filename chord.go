@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -249,11 +250,11 @@ func main() {
 					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
-				fmt.Print("Node (" + IP + ") " + fmt.Sprint(ID) + " adding file: \n")
+				filename := inputs[1]
+				fmt.Println("Node (" + IP + ") " + strconv.Itoa(ID) + " adding file: " + filename)
 
-				inputs = inputs[1:]
-				filename := strings.Join(inputs, " ")
-				fmt.Print("	" + filename)
+				// filename := strings.Join(inputs, " ")
+				// fmt.Print("	" + filename)
 
 				chord.ChordNode.AddFile(filename)
 

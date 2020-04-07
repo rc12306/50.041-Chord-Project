@@ -107,7 +107,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "putKeyValue":
 		// Call node to put file (and its identifier) into hashtable
 		putSuccess := handlePutKeyValue(payload.MsgInt, payload.Msg)
-		if putSuccess != nil {
+		if putSuccess == nil {
 			*reply = Packet{"Value", "Success", 0, nil, ChordNode.IP}
 		} else {
 			*reply = Packet{"Value", "File already exist in the table", 0, nil, ChordNode.IP}
@@ -423,7 +423,7 @@ func (remoteNode *RemoteNode) putRPC(key int, value string) error {
 
 	// Check that put was successful
 	if reply.Msg != "Success" {
-		return errors.New("File already exist in the table")
+		return errors.New("File already exists in the table")
 	}
 
 	client.Close()
@@ -435,7 +435,7 @@ func handlePutKeyValue(key int, value string) error {
 	err := ChordNode.put(key, value)
 	if err != nil {
 		log.Println(err)
-		return errors.New("File already exist in the table")
+		return errors.New("File already exists in the table")
 	}
 	return nil
 }

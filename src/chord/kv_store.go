@@ -2,6 +2,7 @@ package chord
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 )
@@ -29,13 +30,13 @@ func (node *Node) put(key int, value string) error {
 	// keyExists is a bool
 	// if hashFile does not exist, keyExists is False
 	_, keyExists := node.hashTable[key]
+	fmt.Println(keyExists)
 	if keyExists {
 		return errors.New("Error putting file " + value + " into hashtable: identifier " + strconv.Itoa(key) + " already exists in hash table")
-	} else {
-		// Add file in hash table if it does not exist
-		node.hashTable[key] = value
-		return nil
 	}
+	// Add file in hash table if it does not exist
+	node.hashTable[key] = value
+	return nil
 }
 
 // delete removes key-value pair from storage
@@ -54,10 +55,7 @@ func (node *Node) delete(key int) {
 func (node *Node) transferKeys(targetNode *RemoteNode, start int, end int) error {
 	node.dataStoreLock.Lock()
 	defer node.dataStoreLock.Unlock()
-	if end < start {
-		end += ringSize
-	}
-	keysToDelete := make([]int, end-start)
+	keysToDelete := make([]int, 0)
 	for keyIdentifier, fileName := range node.hashTable {
 		if BetweenLeftIncl(keyIdentifier, start, end) {
 			err := targetNode.putRPC(keyIdentifier, fileName)

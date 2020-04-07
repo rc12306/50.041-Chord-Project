@@ -194,22 +194,19 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 				2. Delete keys from old replication nodes
 				3. Add keys to new replication nodes
 		*/
-		primaryKeys := make([]int, 0)
-		for key := range node.hashTable {
-			if BetweenLeftIncl(key, node.predecessor.Identifier, node.Identifier) {
-				primaryKeys = append(primaryKeys, key)
-			}
-		}
 		// get replicated keys
 		replicatedKeys := make(map[int]string)
 		for key, value := range node.hashTable {
-			if BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
+			if node.predecessor == nil || BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
 				replicatedKeys[key] = value
 			}
 		}
 		// check for nodes that still remain as replciation node
-		repeatedReplicationNodes := make([]*RemoteNode, replicationFactor)
-		for _, newNode := range copyList[:replicationFactor] {
+		repeatedReplicationNodes := make([]*RemoteNode, 0)
+		newReplicationNodes := pruneList(node.IP, copyList[:replicationFactor])
+		oldReplicationNodes := pruneList(node.IP, node.successorList[:replicationFactor])
+		// fmt.Println(newReplicationNodes, oldReplicationNodes)
+		for _, newNode := range newReplicationNodes {
 			if !containsNode(newNode, node.successorList[:replicationFactor]) {
 				if node != nil {
 					for key, value := range replicatedKeys {
@@ -220,7 +217,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 				repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
 			}
 		}
-		for _, oldNode := range node.successorList[:replicationFactor] {
+		for _, oldNode := range oldReplicationNodes {
 			if !containsNode(oldNode, repeatedReplicationNodes) {
 				if node != nil {
 					for key := range replicatedKeys {
@@ -243,4 +240,14 @@ func containsNode(node *RemoteNode, nodes []*RemoteNode) bool {
 		}
 	}
 	return false
+}
+
+func pruneList(myIP string, nodes []*RemoteNode) []*RemoteNode {
+	uniqueList := make([]*RemoteNode, 0)
+	for _, replicationNode := range nodes {
+		if replicationNode != nil && replicationNode.IP != myIP && !containsNode(replicationNode, uniqueList) {
+			uniqueList = append(uniqueList, replicationNode)
+		}
+	}
+	return uniqueList
 }
