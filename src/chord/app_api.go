@@ -3,6 +3,7 @@ package chord
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
@@ -43,6 +44,7 @@ func (node *Node) FindFile(fileName string) {
 	} else {
 		// successor pointers may be wrong: pause for 1 second for stablise to correct them
 		fmt.Println("Failed to retrieve file: retrying lookup")
+		time.Sleep(time.Second)
 		nodeStored := node.findSuccessor(keyIdentifier)
 		fmt.Println("Retry lookup:", fileName, "is stored at Node", nodeStored.Identifier, "("+nodeStored.IP+")")
 		fileRetrieved, err := nodeStored.getRPC(keyIdentifier)
@@ -64,7 +66,7 @@ func (node *Node) AddFile(fileName string) {
 		fmt.Println(fileName, "has been successfully put into Node", nodeStored.Identifier, "("+nodeStored.IP+")")
 		fmt.Println("Replciating key across nodes for", fileName)
 		successorList, _ := nodeStored.getSuccessorListRPC()
-		for index, successorNode := range successorList[:3] {
+		for index, successorNode := range successorList[:replicationFactor] {
 			err := successorNode.putRPC(keyIdentifier, fileName)
 			if err == nil {
 				fmt.Println("Successfully replicated file", fileName, "in successor", index, "of", nodeStored.Identifier)
