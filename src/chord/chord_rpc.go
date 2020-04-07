@@ -481,10 +481,10 @@ func (remoteNode *RemoteNode) delRPC(key int) error {
 
 func handleDelKeyValue(key int) error {
 	// Call node to make changes
-	err := ChordNode.delete(key)
-	if err != nil {
-		log.Println(err)
-		return errors.New("File has already been removed")
-	}
+	ChordNode.delete(key)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return errors.New("File has already been removed")
+	// }
 	return nil
 }
