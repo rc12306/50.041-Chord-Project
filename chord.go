@@ -176,6 +176,7 @@ func main() {
 
 			case "s": // SCAN IP
 				ipSlice, _ := CheckRing()
+				fmt.Println(ipSlice)
 				fmt.Print("\n>>>")
 
 			case "i": // INITIALISE - Create Node and Join
@@ -252,7 +253,6 @@ func main() {
 				filename := strings.Join(inputs, " ")
 				fmt.Print("	" + filename)
 
-				// TODO: use FindFile to find file with correct filename
 				chord.ChordNode.FindFile(filename)
 
 				fmt.Print("\n>>>")
@@ -273,7 +273,6 @@ func main() {
 				filename := strings.Join(inputs, " ")
 				fmt.Print("	" + filename)
 
-				// TODO: use AddFile to add file with correct filename
 				chord.ChordNode.AddFile(filename)
 
 				fmt.Print("\n>>>")
