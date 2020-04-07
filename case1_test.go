@@ -4,6 +4,7 @@ import (
 	"chord/src/chord"
 	"fmt"
 	"testing"
+	"time"
 )
 
 // Test1 creates the chord ring structure
@@ -11,38 +12,39 @@ func Test1(t *testing.T) {
 	fmt.Println("Starting test ...")
 
 	// init User IP info
-	fmt.Println("Gathering machine data ...")
+	fmt.Println("\nGathering machine data ...")
 	myIp := chord.GetOutboundIP()
 	myId := chord.Hash(myIp)
 	fmt.Println("IP: ", myIp)
 	fmt.Println("ID: ", myId)
 
 	// Scan for IPs in network
+	fmt.Println("\nScanning network ... ...")
 	_, othersIp := chord.NetworkIP()
-	fmt.Println("Found IP in network: ", othersIp)
+	fmt.Println("IPs in network: ", othersIp)
 
-	// // Delay according to ID of node to avoid concurrency issues
-	// tDelay := time.Duration(myId) * time.Second
-	// fmt.Println("Wait for ", tDelay)
-	// time.Sleep(tDelay)
+	// Delay according to ID of node to avoid concurrency issues
+	tDelay := time.Duration(myId) * time.Second
+	fmt.Println("\nWait for ", tDelay)
+	time.Sleep(tDelay)
 
-	fmt.Println("Looking for IPs in ring...")
+	fmt.Println("\nLooking for IPs in ring...")
 	nodesInRing, _ := chord.CheckRing()
 	fmt.Println("Current IPs in Ring: ", nodesInRing)
 
-	fmt.Println("Creating node ...")
+	fmt.Println("\nCreating node ...")
 	chord.ChordNode = &chord.Node{
 		Identifier: myId,
 		IP:         myIp,
 	}
-	fmt.Println("Activating node ...")
+	fmt.Println("\nActivating node ...")
 	go node_listen(myIp)
 
 	// Create/Join ring
 	if len(nodesInRing) < 1 {
 		// Chord ring NOT exists
 		// Create new ring
-		fmt.Println("Creating node at ", myIp)
+		fmt.Println("Creating new ring at ", myIp)
 		chord.ChordNode.CreateNodeAndJoin(nil)
 	} else {
 		// Chord ring exists
@@ -57,14 +59,19 @@ func Test1(t *testing.T) {
 		chord.ChordNode.IP = Ip
 		chord.ChordNode.Identifier = Id
 
-		fmt.Println("Joining node at ", Ip)
+		fmt.Println("Joining existing ring at ", Ip)
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
 	}
 
 	// Update new chord ring
 	ipRing, ipNot := chord.CheckRing()
-	fmt.Println("IPs in ring: ", ipRing)
-	fmt.Println("IPs NOT in ring: ", ipNot)
+	fmt.Println("in RING: ", ipRing)
+	fmt.Println("Outside: ", ipNot)
+
+	// // Delay according to ID of node to avoid concurrency issues
+	// eDelay := time.Duration(90-myId) * time.Second
+	// fmt.Println("\nWait for ", eDelay)
+	// time.Sleep(eDelay)
 
 	// // Delay according to ensure that all nodes enters ring before test ends
 	// eDelay := time.Duration(90) * time.Second
