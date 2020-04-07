@@ -157,6 +157,7 @@ func main() {
 
 				remoteNode_IP := inputs[1] //String of IP
 				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
+
 				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
@@ -174,7 +175,7 @@ func main() {
 				fmt.Print("\n>>>")
 
 			case "s": // SCAN IP
-				ipSlice := CheckRing()
+				ipSlice, _ := CheckRing()
 				fmt.Print("\n>>>")
 
 			case "i": // INITIALISE - Create Node and Join
@@ -189,7 +190,7 @@ func main() {
 				// 	break
 				// }
 
-				ipSlice := CheckRing()
+				ipSlice, _ := CheckRing()
 				fmt.Println(ipSlice)
 				ringSize := len(ipSlice)
 				remoteNode_IP := ipSlice[rand.Intn(ringSize)]
