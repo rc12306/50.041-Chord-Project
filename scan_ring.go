@@ -1,7 +1,7 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"net"
 	"os/exec"
 
@@ -115,7 +115,7 @@ func NetworkIP() (string, []string) {
 
 	basicIP := GetOutboundIP()
 	myIP := basicIP + "/24"
-	// fmt.Println(myIP)
+	fmt.Println(myIP)
 	hosts, _ := Hosts(myIP)
 	concurrentMax := 100
 	pingChan := make(chan string, concurrentMax)
@@ -130,8 +130,10 @@ func NetworkIP() (string, []string) {
 
 	for _, ip := range hosts {
 		pingChan <- ip
-		//fmt.Println("sent: " + ip)
+		// fmt.Println("sent: " + ip)
 	}
+
+	fmt.Println("Debug 1:", doneChan)
 
 	alives := <-doneChan
 
@@ -143,7 +145,7 @@ func NetworkIP() (string, []string) {
 		}
 	}
 
-	// fmt.Println("Search completed!")
+	fmt.Println("Search completed!")
 
 	return basicIP, ipSlice
 }
@@ -185,12 +187,12 @@ func CheckRing() []string {
 	var myIp string
 	var othersIp []string
 
-	// fmt.Println("Initiating IP scan ...")
+	fmt.Println("Initiating IP scan ...")
 	myIp, othersIp = NetworkIP()
-	// fmt.Println("Found IP in network: ", othersIp)
+	fmt.Println("Found IP in network: ", othersIp)
 
 	for i := 0; i < len(othersIp); i++ {
-		// fmt.Println("Checking ", othersIp[i], " if in chord ring ...")
+		fmt.Println("Checking ", othersIp[i], " if in chord ring ...")
 		checkIp := Ping(myIp, othersIp[i])
 
 		if checkIp {

@@ -34,6 +34,7 @@ func Test1(t *testing.T) {
 	fmt.Println("Wait for ", time.Duration(myId * 100) * time.Millisecond)
 	time.Sleep(time.Duration(myId) * 100 * time.Millisecond)
 
+	fmt.Println("Looking for other IPs in ring...")
 	nodesInRing := CheckRing()
 	fmt.Println("Current IPs in Ring: ", nodesInRing)
 	if len(nodesInRing) < 1 {
