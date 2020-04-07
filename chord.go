@@ -125,18 +125,11 @@ func main() {
 
 				fmt.Println("Deprecated function!")
 
-<<<<<<< HEAD
 				ipSlice, _ := chord.CheckRing()
-				fmt.Println(ipSlice)
-
-				remoteNode_IP := inputs[1]
-=======
-				ipSlice, _ := CheckRing()
 				fmt.Println(ipSlice)
 
 				remoteNode_IP := inputs[1] //String of IP
 				//remoteNode_IP_str := fmt.Sprint(ip2Long(remoteNode_IP)) //String of decimal IP
->>>>>>> 5be3d54f51bcf047ad076022dd3bf1c1024f30d9
 
 				_, found := Find(ipSlice, remoteNode_IP)
 				if !found {
@@ -145,11 +138,7 @@ func main() {
 					break
 				}
 
-<<<<<<< HEAD
-				remoteNode_ID := chord.Hash(remoteNode_IP)
-=======
 				remoteNode_ID := chord.Hash(remoteNode_IP) //Hash of decimal IP
->>>>>>> 5be3d54f51bcf047ad076022dd3bf1c1024f30d9
 				remoteNode := &chord.RemoteNode{
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
@@ -167,11 +156,7 @@ func main() {
 				fmt.Print("\n>>>")
 
 			case "s": // SCAN IP
-<<<<<<< HEAD
 				ipSlice, _ := chord.CheckRing()
-=======
-				ipSlice, _ := CheckRing()
->>>>>>> 5be3d54f51bcf047ad076022dd3bf1c1024f30d9
 				fmt.Println(ipSlice)
 				fmt.Print("\n>>>")
 
@@ -182,11 +167,7 @@ func main() {
 					break
 				}
 
-<<<<<<< HEAD
 				ipSlice, _ := chord.CheckRing()
-=======
-				ipSlice, _ := CheckRing()
->>>>>>> 5be3d54f51bcf047ad076022dd3bf1c1024f30d9
 				fmt.Println(ipSlice)
 				ringSize := len(ipSlice)
 
