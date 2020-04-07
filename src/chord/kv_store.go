@@ -51,6 +51,9 @@ func (node *Node) delete(key int) {
 func (node *Node) transferKeys(targetNode *RemoteNode, start int, end int) error {
 	node.dataStoreLock.Lock()
 	defer node.dataStoreLock.Unlock()
+	if end < start {
+		end += ringSize
+	}
 	keysToDelete := make([]int, end-start)
 	for keyIdentifier, fileName := range node.hashTable {
 		if BetweenLeftIncl(keyIdentifier, start, end) {
