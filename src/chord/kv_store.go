@@ -2,7 +2,6 @@ package chord
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"strconv"
 )
@@ -27,7 +26,6 @@ func (node *Node) put(key int, value string) error {
 	node.dataStoreLock.Lock()
 	defer node.dataStoreLock.Unlock()
 	_, keyExists := node.hashTable[key]
-	fmt.Println(keyExists)
 	if keyExists {
 		return errors.New("Error putting file " + value + " into hashtable: identifier " + strconv.Itoa(key) + " already exists in hash table")
 	}

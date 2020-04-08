@@ -230,11 +230,8 @@ func main() {
 					fmt.Print("Missing Variable(s)\n>>>")
 					break
 				}
-				fmt.Print("Node (" + IP + ") " + fmt.Sprint(ID) + " searching for: \n")
-
-				inputs = inputs[1:]
-				filename := strings.Join(inputs, " ")
-				fmt.Print("	" + filename)
+				filename := inputs[1]
+				fmt.Println("Node (" + IP + ") " + fmt.Sprint(ID) + " searching for: " + filename)
 
 				chord.ChordNode.FindFile(filename)
 
