@@ -31,10 +31,10 @@ func Test2(t *testing.T) {
 	_, othersIp := chord.NetworkIP()
 	fmt.Println("IPs in network: ", othersIp)
 
-	// // Delay according to ID of node to avoid concurrency issues
-	// tDelay := time.Duration(myId) * time.Second
-	// fmt.Println("\nWait for ", tDelay)
-	// time.Sleep(tDelay)
+	// Delay according to ID of node to avoid concurrency issues
+	tDelay := time.Duration(myId) * time.Second
+	fmt.Println("\nWait for ", tDelay)
+	time.Sleep(tDelay)
 
 	fmt.Println("\nLooking for IPs in ring...")
 	nodesInRing, _ := chord.CheckRing()
@@ -78,10 +78,10 @@ func Test2(t *testing.T) {
 	fmt.Println("\nin RING: ", ipRing)
 	fmt.Println("Outside: ", ipNot)
 
-	// // Wait till all nodes have joint the chord ring
-	// eDelay := time.Duration(90-myId) * time.Second
-	// fmt.Println("\nWait for ", eDelay)
-	// time.Sleep(eDelay)
+	// Wait till all nodes have joint the chord ring
+	eDelay := time.Duration(90-myId) * time.Second
+	fmt.Println("\nWait for ", eDelay)
+	time.Sleep(eDelay)
 
 	// Add files into the chord ring
 	fileSlice := [5]string{"apple", "pear", "cat", "puppy", "shield"}

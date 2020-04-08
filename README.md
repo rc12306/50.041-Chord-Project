@@ -54,10 +54,25 @@ go run <FILE>.go
 ```
 
 # Test Cases
-**To run test cases:**
+**Clear ALL docker container resources**
+'''
+bash clear.sh
+'''
+
+**Run test cases in local machine:**
 ```
-go test -run Test1.go
+go test -run TestX.go
 ```
+where X is the # of test case
+eg. go test -run Test1.go
+
+**Run test cases in Docker containers:**
+'''
+bash testX.sh
+'''
+where X is the # of test case
+eg. bash test1.sh
+
 *Note: Each test case begins with 5 nodes already set up in a chord ring.*
 
 **Test Case #1:** New node joins when lookup is ongoing.
