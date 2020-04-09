@@ -1,8 +1,11 @@
 package chord
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"math"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -40,15 +43,18 @@ func (node *Node) create() error {
 // join Chord ring which has remoteNode inside
 func (node *Node) join(remoteNode *RemoteNode) error {
 	node.predecessor = nil
-	successor, _ := remoteNode.findSuccessorRPC(node.Identifier)
-	node.successorList = make([]*RemoteNode, tableSize)
-	node.successorList[0] = successor
-	node.hashTable = make(map[int]string)
-	node.successorLock.Lock()
-	node.updateSuccessorList(0)
-	node.successorLock.Unlock()
-	node.stop = make(chan bool)
-	return nil
+	successor, err := remoteNode.findSuccessorRPC(node.Identifier)
+	if err == nil {
+		node.successorList = make([]*RemoteNode, tableSize)
+		node.successorList[0] = successor
+		node.hashTable = make(map[int]string)
+		node.successorLock.Lock()
+		node.updateSuccessorList(0)
+		node.successorLock.Unlock()
+		node.stop = make(chan bool)
+		return nil
+	}
+	return errors.New("Unable to join Chord ring using Node " + strconv.Itoa(remoteNode.Identifier) + "(" + remoteNode.IP + ")")
 }
 
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
@@ -148,26 +154,36 @@ func (node *Node) findSuccessor(id int) *RemoteNode {
 	}
 	node.successorLock.RUnlock()
 	// get closest preceding node to id in the finger table of this node
-	n, _ := node.findClosestPredecessor(id)
+	n := node.findClosestPredecessor(id)
 	if n.IP == node.IP {
 		return n
 	}
-	successor, _ := n.findSuccessorRPC(id)
+	successor, err := n.findSuccessorRPC(id)
+	if err != nil {
+		// retry findsuccessor after ensuring ring has been stabilised
+		time.Sleep(time.Second)
+		successor, err := n.findSuccessorRPC(id)
+		if err != nil {
+			log.Fatal("Node is unable to find successor for identifier", id)
+		}
+		return successor
+	}
 	return successor
+
 }
 
 // find highest predecessor of node/key with identifier id i.e. largest node with identifier < id
-func (node *Node) findClosestPredecessor(id int) (*RemoteNode, error) {
+func (node *Node) findClosestPredecessor(id int) *RemoteNode {
 	/*
 		searches finger table for most immediate predecessor of id
 	*/
 	for i := len(node.fingerTable) - 1; i >= 0; i-- {
 		fingerEntry := node.fingerTable[i]
 		if fingerEntry != nil && Between(fingerEntry.Identifier, node.Identifier, id) {
-			return fingerEntry, nil
+			return fingerEntry
 		}
 	}
-	return &RemoteNode{IP: node.IP, Identifier: node.Identifier}, nil
+	return &RemoteNode{IP: node.IP, Identifier: node.Identifier}
 }
 
 // not locked: functions calling updateSuccessorList must ensure successorLock is held before calling function

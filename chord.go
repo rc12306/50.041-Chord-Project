@@ -143,7 +143,11 @@ func main() {
 				chord.ChordNode.Identifier = ID
 
 				go node_listen(IP)
-				chord.ChordNode.CreateNodeAndJoin(remoteNode)
+				err := chord.ChordNode.CreateNodeAndJoin(remoteNode)
+
+				if err != nil {
+					fmt.Println("Unable to join remote node (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+				}
 
 				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
 				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
@@ -162,41 +166,16 @@ func main() {
 					break
 				}
 
-				ipSlice, _ := chord.CheckRing()
-				fmt.Println(ipSlice)
-				ringSize := len(ipSlice)
+				err := initialise(IP, ID)
+				if err != nil {
+					// if remote node chosen is not responding, rescan ip and choose node
+					fmt.Println("Retrying initialisation...")
+					err = initialise(IP, ID)
+					if err != nil {
+						fmt.Println("Failed to initialise node")
+					}
 
-				if ringSize == 0 {
-					chord.ChordNode.IP = IP
-					chord.ChordNode.Identifier = ID
-
-					go node_listen(IP)
-					chord.ChordNode.CreateNodeAndJoin(nil)
-
-					fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
-
-					fmt.Print("\n>>>")
-					break
 				}
-
-				remoteNode_IP := ipSlice[rand.Intn(ringSize)]
-
-				remoteNode_ID := chord.Hash(remoteNode_IP)
-				remoteNode := &chord.RemoteNode{
-					Identifier: remoteNode_ID,
-					IP:         remoteNode_IP,
-				}
-
-				chord.ChordNode.IP = IP
-				chord.ChordNode.Identifier = ID
-
-				go node_listen(IP)
-				chord.ChordNode.CreateNodeAndJoin(remoteNode)
-
-				fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
-				fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
-
-				fmt.Print("\n>>>")
 
 			case "p": // PRINT NODE DATA
 				if chord.ChordNode.Identifier == -1 {
@@ -263,4 +242,50 @@ func main() {
 			fmt.Print(">>>")
 		}
 	}
+}
+
+func initialise(IP string, ID int) error {
+	ipSlice, _ := chord.CheckRing()
+	fmt.Println(ipSlice)
+	ringSize := len(ipSlice)
+
+	if ringSize == 0 {
+		chord.ChordNode.IP = IP
+		chord.ChordNode.Identifier = ID
+
+		go node_listen(IP)
+		chord.ChordNode.CreateNodeAndJoin(nil)
+
+		fmt.Print("Created chord network (" + IP + ") as " + fmt.Sprint(ID) + ".")
+
+		fmt.Print("\n>>>")
+
+		return nil
+	}
+
+	remoteNode_IP := ipSlice[rand.Intn(ringSize)]
+
+	remoteNode_ID := chord.Hash(remoteNode_IP)
+	remoteNode := &chord.RemoteNode{
+		Identifier: remoteNode_ID,
+		IP:         remoteNode_IP,
+	}
+
+	chord.ChordNode.IP = IP
+	chord.ChordNode.Identifier = ID
+
+	go node_listen(IP)
+	err := chord.ChordNode.CreateNodeAndJoin(remoteNode)
+
+	if err != nil {
+		fmt.Println("Unable to join rmeote node (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+		return err
+	}
+
+	fmt.Println("remoteNode is (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+	fmt.Println("Joined chord network (" + IP + ") as " + fmt.Sprint(ID) + ". ")
+
+	fmt.Print("\n>>>")
+
+	return nil
 }

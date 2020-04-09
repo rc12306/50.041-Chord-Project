@@ -1,26 +1,32 @@
 package chord
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
 )
 
 // CreateNodeAndJoin helps initialise nodes and add them to the network for testing
-func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) {
+func (node *Node) CreateNodeAndJoin(joinNode *RemoteNode) error {
 	if node.IP == "" {
 		log.Fatal("IP of node has not been set")
-	} else {
-		if joinNode == nil {
-			node.create()
-		} else {
-			node.join(joinNode)
-		}
-		node.wg.Add(3)
-		go node.stabilise()
-		go node.fixFingers()
-		go node.checkPredecessor()
+		return errors.New("IP of node has not been set")
 	}
+	if joinNode == nil {
+		node.create()
+	} else {
+		err := node.join(joinNode)
+		if err != nil {
+			return err
+		}
+	}
+	node.wg.Add(3)
+	go node.stabilise()
+	go node.fixFingers()
+	go node.checkPredecessor()
+	return nil
+
 }
 
 // ShutDown stops all functions and waits for all of them to end before returning
