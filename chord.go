@@ -137,6 +137,7 @@ func main() {
 					Identifier: remoteNode_ID,
 					IP:         remoteNode_IP,
 				}
+
 				chord.ChordNode.IP = IP
 				chord.ChordNode.Identifier = ID
 
@@ -211,6 +212,8 @@ func main() {
 					break
 				}
 
+				// TODO: use shutdown()
+				// TODO: close node_listen goroutine()
 				chord.ChordNode.ShutDown()
 				chord.ChordNode = &chord.Node{}
 				chord.ChordNode.Identifier = -1
@@ -233,6 +236,7 @@ func main() {
 				filename := strings.Join(inputs, " ")
 				fmt.Print("	" + filename)
 
+				// TODO: use FindFile to find file with correct filename
 				chord.ChordNode.FindFile(filename)
 
 				fmt.Print("\n>>>")
@@ -253,6 +257,7 @@ func main() {
 				filename := strings.Join(inputs, " ")
 				fmt.Print("	" + filename)
 
+				// TODO: use AddFile to add file with correct filename
 				chord.ChordNode.AddFile(filename)
 
 				fmt.Print("\n>>>")
