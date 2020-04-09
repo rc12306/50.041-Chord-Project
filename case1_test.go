@@ -4,6 +4,7 @@ import (
 	"chord/src/chord"
 	"fmt"
 	"testing"
+	"math/rand"
 	"time"
 )
 
@@ -18,55 +19,86 @@ func Test1(t *testing.T) {
 	fmt.Println("IP: ", myIp)
 	fmt.Println("ID: ", myId)
 
-	// Scan for IPs in network
-	fmt.Println("\nScanning network ... ...")
-	_, othersIp := chord.NetworkIP()
-	fmt.Println("IPs in network: ", othersIp)
-
-	// Delay according to ID of node to avoid concurrency issues
-	tDelay := time.Duration(myId) * time.Second
-	fmt.Println("\nWait for ", tDelay)
-	time.Sleep(tDelay)
-
-	fmt.Println("\nLooking for IPs in ring...")
-	nodesInRing, _ := chord.CheckRing()
-	fmt.Println("Current IPs in Ring: ", nodesInRing)
-
-	fmt.Println("\nCreating node ...")
 	chord.ChordNode = &chord.Node{
 		Identifier: myId,
-		IP:         myIp,
+		IP: myIp,
 	}
-	fmt.Println("\nActivating node ...")
-	go node_listen(myIp)
 
-	// Create/Join ring
-	if len(nodesInRing) < 1 {
-		// Chord ring NOT exists
-		// Create new ring
-		fmt.Println("Creating new ring at ", myIp)
-		chord.ChordNode.CreateNodeAndJoin(nil)
-	} else {
-		// Chord ring exists
-		// Join chord ring via a node in the ring
-		Ip := nodesInRing[0]
-		Id := chord.Hash(Ip)
-		remoteNode := &chord.RemoteNode{
-			Identifier: Id,
-			IP:         Ip,
+	ringSize := 0
+	for ringSize == 0 {
+		// Delay according to ID of node to avoid concurrency issues
+		tDelay := time.Duration(myId) * time.Second / 10
+		fmt.Println("\nWait for ", tDelay)
+		time.Sleep(tDelay)
+
+		// Scan for IPs in network
+		fmt.Println("\nScanning network ... ...")
+		ipSlice, _ := chord.CheckRing()
+		ringSize = len(ipSlice)
+		fmt.Println(ipSlice)
+		fmt.Print("\n>>>")
+		// _, othersIp := chord.NetworkIP()
+		// fmt.Println("IPs in network: ", othersIp)
+
+		//
+		//
+		// fmt.Println("\nLooking for IPs in ring...")
+		// nodesInRing, _ := chord.CheckRing()
+		// fmt.Println("Current IPs in Ring: ", nodesInRing)
+		//
+		// fmt.Println("\nCreating node ...")
+		// chord.ChordNode = &chord.Node{
+		// 	Identifier: myId,
+		// 	IP:         myIp,
+		// }
+		// fmt.Println("\nActivating node ...")
+		// go node_listen(myIp)
+
+		// Create/Join ring
+		// if ringSize == 0 {
+		if ringSize == 0 {
+			// Chord ring does NOT exists
+			// Create new ring
+			go node_listen(myIp)
+			chord.ChordNode.CreateNodeAndJoin(nil)
+			fmt.Println("Created new ring at ", myIp)
+		} else {
+			// Chord ring exists
+			// Join chord ring via a node in the ring
+			// Ip := nodesInRing[0]
+			// Id := chord.Hash(Ip)
+			// remoteNode := &chord.RemoteNode{
+			// 	Identifier: Id,
+			// 	IP:         Ip,
+			// }
+			//
+			// chord.ChordNode.IP = Ip
+			// chord.ChordNode.Identifier = Id
+			//
+			// fmt.Println("Joining existing ring at ", Ip)
+			// chord.ChordNode.CreateNodeAndJoin(remoteNode)
+			Ip := ipSlice[rand.Intn(ringSize)]
+			Id := chord.Hash(Ip)
+			remoteNode := &chord.RemoteNode{
+				Identifier: Id,
+				IP:         Ip,
+			}
+
+			if Ip == myIp {
+				break
+			}
+
+			fmt.Println("Joining existing ring at ", Ip)
+			go node_listen(myIp)
+			chord.ChordNode.CreateNodeAndJoin(remoteNode)
+			fmt.Print("\n>>>")
 		}
-
-		chord.ChordNode.IP = Ip
-		chord.ChordNode.Identifier = Id
-
-		fmt.Println("Joining existing ring at ", Ip)
-		chord.ChordNode.CreateNodeAndJoin(remoteNode)
 	}
 
 	// Update new chord ring
-	ipRing, ipNot := chord.CheckRing()
-	fmt.Println("in RING: ", ipRing)
-	fmt.Println("Outside: ", ipNot)
+	// ipRing, ipNot := chord.CheckRing()
+	// fmt.Println("in RING: ", ipRing)
+	// fmt.Println("Outside: ", ipNot)
 
 	// // Delay according to ID of node to avoid concurrency issues
 	// eDelay := time.Duration(90-myId) * time.Second
