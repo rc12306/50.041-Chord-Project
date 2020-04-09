@@ -3,8 +3,8 @@ package main
 import (
 	"chord/src/chord"
 	"fmt"
-	"testing"
 	"math/rand"
+	"testing"
 	"time"
 )
 
@@ -21,7 +21,7 @@ func Test1(t *testing.T) {
 
 	chord.ChordNode = &chord.Node{
 		Identifier: myId,
-		IP: myIp,
+		IP:         myIp,
 	}
 
 	ringSize := 0
@@ -62,6 +62,8 @@ func Test1(t *testing.T) {
 			go node_listen(myIp)
 			chord.ChordNode.CreateNodeAndJoin(nil)
 			fmt.Println("Created new ring at ", myIp)
+			ringSize++
+			time.Sleep(time.Second * time.Duration(10))
 		} else {
 			// Chord ring exists
 			// Join chord ring via a node in the ring
@@ -86,12 +88,12 @@ func Test1(t *testing.T) {
 
 			if Ip == myIp {
 				break
+			} else {
+				fmt.Println("Joining existing ring at ", Ip)
+				go node_listen(myIp)
+				chord.ChordNode.CreateNodeAndJoin(remoteNode)
+				fmt.Print("\n>>>")
 			}
-
-			fmt.Println("Joining existing ring at ", Ip)
-			go node_listen(myIp)
-			chord.ChordNode.CreateNodeAndJoin(remoteNode)
-			fmt.Print("\n>>>")
 		}
 	}
 
