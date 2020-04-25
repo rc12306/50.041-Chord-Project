@@ -116,7 +116,7 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "delKeyValue":
 		// Call node to put file (and its identifier) into hashtable
 		delSuccess := handleDelKeyValue(payload.MsgInt)
-		if delSuccess != nil {
+		if delSuccess == nil {
 			*reply = Packet{"Value", "Success", 0, nil, ChordNode.IP}
 		} else {
 			*reply = Packet{"Value", "File has already been removed from hash table", 0, nil, ChordNode.IP}
@@ -484,7 +484,7 @@ func handleDelKeyValue(key int) error {
 	// Call node to make changes
 	err := ChordNode.delete(key)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		return errors.New("File has already been removed")
 	}
 	return nil

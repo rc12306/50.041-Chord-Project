@@ -104,7 +104,7 @@ func (node *Node) DelFile(fileName string) {
 			if replicationErr == nil {
 				fmt.Println("Successfully deleted file", fileName, "in successor", index, "of", nodeStored.Identifier)
 			} else {
-				fmt.Println("Failed to delete file", fileName, "in successor", index, "of", nodeStored.Identifier)
+				fmt.Println("File", fileName, "has been deleted in successor", index, "of", nodeStored.Identifier)
 			}
 		}
 	} else {
