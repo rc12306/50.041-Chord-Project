@@ -3,7 +3,6 @@ package chord
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strconv"
 )
 
@@ -44,7 +43,6 @@ func (node *Node) delete(key int) error {
 		delete(node.hashTable, key)
 		return nil
 	} else {
-		log.Print("Key with identifier" + strconv.Itoa(key) + "already does not exist in table")
 		return errors.New("Key with identifier" + strconv.Itoa(key) + "does not exist in table")
 	}
 }

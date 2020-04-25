@@ -4,6 +4,9 @@ import (
 	"chord/src/chord"
 	"fmt"
 	"math/rand"
+	"os"
+	"os/signal"
+	"sync"
 	"testing"
 	"time"
 )
@@ -17,6 +20,11 @@ func ranDelay() {
 
 // Test1 creates the chord ring structure
 func Test2(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+
 	fmt.Println("Starting test ...")
 
 	// init User IP info
@@ -35,6 +43,7 @@ func Test2(t *testing.T) {
 	tDelay := time.Duration(myId*100) * time.Millisecond
 	fmt.Println("\nWait for ", tDelay)
 	time.Sleep(tDelay)
+	fmt.Println("Node", myId, "has finished sleeping!")
 
 	fmt.Println("\nLooking for IPs in ring...")
 	nodesInRing, _ := chord.CheckRing()
@@ -79,9 +88,10 @@ func Test2(t *testing.T) {
 	fmt.Println("Outside: ", ipNot)
 
 	// Wait till all nodes have joint the chord ring
-	eDelay := time.Duration(90-myId) * time.Second
+	eDelay := time.Duration(10) * time.Second
 	fmt.Println("\nWait for ", eDelay)
 	time.Sleep(eDelay)
+	fmt.Println("Node", myId, "has finished sleeping!\nTest: add & search files")
 
 	// Add files into the chord ring
 	fileSlice := [5]string{"apple", "pear", "cat", "puppy", "shield"}
@@ -90,7 +100,7 @@ func Test2(t *testing.T) {
 		fmt.Println("Adding: ", file)
 		chord.ChordNode.AddFile(file)
 	}
-	fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
+	// fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
 
 	// Search for files
 	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
@@ -101,7 +111,13 @@ func Test2(t *testing.T) {
 		fmt.Println("\nSearching for ", search)
 		chord.ChordNode.FindFile(search)
 	}
-	fmt.Println("\nSearch test successful!")
+	fmt.Println("\nSearch test successful! \nPress Ctrl+C to end")
+
+	go func() {
+		<-c
+		wg.Done()
+	}()
+	wg.Wait()
 
 	fmt.Println("\nTest completed.")
 }

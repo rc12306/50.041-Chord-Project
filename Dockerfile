@@ -9,6 +9,6 @@ ADD . .
 
 # Commands you can run when creating a docker
 # Added nano to edit files on docker
-RUN apt-get update
-RUN apt-get install nano -y
-RUN apt-get install vim -y
+# RUN apt-get update
+# RUN apt-get install nano -y
+# RUN apt-get install vim -y
