@@ -54,7 +54,7 @@ func (node *Node) transferKeys(targetNode *RemoteNode, start int, end int) error
 	for keyIdentifier, fileName := range node.hashTable {
 		if BetweenLeftIncl(keyIdentifier, start, end) {
 			err := targetNode.putRPC(keyIdentifier, fileName)
-			if err != nil {
+			if err == nil {
 				keysToDelete = append(keysToDelete, keyIdentifier)
 			} else {
 				return errors.New("Unable to transfer file " + fileName)

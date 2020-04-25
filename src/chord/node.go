@@ -60,8 +60,12 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
-		node.predecessor = remoteNode
-		node.transferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		err := node.transferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		if err != nil {
+			fmt.Println("Unable to transfer keys:", err)
+		} else {
+			node.predecessor = remoteNode
+		}
 	}
 }
 
