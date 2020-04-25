@@ -46,6 +46,24 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 	if err == nil {
 		node.successorList = make([]*RemoteNode, tableSize)
 		node.successorList[0] = successor
+		go func(sucessor *RemoteNode) {
+			time.Sleep(time.Second * 3)
+			// Wait to receive keys and send them to successor for replication
+			replicatedKeys := make(map[int]string)
+			for key, value := range node.hashTable {
+				// if node.predecessor != nil {
+				// 	fmt.Println(BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier), key, node.predecessor.Identifier, node.Identifier)
+				// }
+				if node.predecessor == nil || BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
+					replicatedKeys[key] = value
+				}
+			}
+			fmt.Println("Replicating", replicatedKeys, "to Node", successor.Identifier)
+			for key, value := range replicatedKeys {
+				successor.putRPC(key, value)
+			}
+
+		}(successor)
 		node.hashTable = make(map[int]string)
 		node.stop = make(chan bool)
 		return nil
@@ -56,10 +74,16 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
-		err := node.transferKeys(remoteNode, node.Identifier, remoteNode.Identifier)
+		var err error
+		if node.predecessor == nil {
+			err = node.transferKeys(remoteNode, node.Identifier, remoteNode.Identifier)
+		} else {
+			err = node.transferKeys(remoteNode, node.predecessor.Identifier, remoteNode.Identifier)
+		}
 		if err != nil {
 			fmt.Println("Failed to transfer keys:", err)
 		} else {
+			fmt.Println("Successfully transferred keys to predecssor Node", remoteNode.Identifier)
 			node.predecessor = remoteNode
 		}
 	}
@@ -84,13 +108,15 @@ func (node *Node) stabilise() {
 		case <-ticker.C:
 			node.successorLock.Lock()
 			x, _ := node.successorList[0].getPredecessorRPC()
+			oldSuccessorNodes := make([]*RemoteNode, tableSize)
+			copy(oldSuccessorNodes, node.successorList)
 			if x != nil && (Between(x.Identifier, node.Identifier, node.successorList[0].Identifier) || node.IP == node.successorList[0].IP) {
 				node.successorList[0] = x
 			}
 			if node.successorList[0].IP != node.IP {
 				node.successorList[0].notifyRPC(&RemoteNode{IP: node.IP, Identifier: node.Identifier})
 			}
-			node.updateSuccessorList(0)
+			node.updateSuccessorList(0, oldSuccessorNodes)
 			node.successorLock.Unlock()
 		case <-node.stop:
 			node.wg.Done()
@@ -187,7 +213,7 @@ func (node *Node) findClosestPredecessor(id int) *RemoteNode {
 }
 
 // not locked: functions calling updateSuccessorList must ensure successorLock is held before calling function
-func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
+func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int, oldSuccessorNodes []*RemoteNode) {
 	node.dataStoreLock.RLock()
 	defer node.dataStoreLock.RUnlock()
 	firstLiveSuccessor := node.successorList[firstLiveSuccessorIndex]
@@ -196,7 +222,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 		if firstLiveSuccessorIndex == len(node.successorList) {
 			fmt.Println("All nodes have failed")
 		} else {
-			node.updateSuccessorList(firstLiveSuccessorIndex)
+			node.updateSuccessorList(firstLiveSuccessorIndex, oldSuccessorNodes)
 		}
 	} else {
 		newSuccessorList, _ := firstLiveSuccessor.getSuccessorListRPC()
@@ -210,35 +236,38 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 				2. Delete keys from old replication nodes
 				3. Add keys to new replication nodes
 		*/
-		// get replicated keys
-		// replicatedKeys := make(map[int]string)
-		// for key, value := range node.hashTable {
-		// 	if node.predecessor == nil || BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
-		// 		replicatedKeys[key] = value
-		// 	}
-		// }
-		// // check for nodes that still remain as replciation node
-		// repeatedReplicationNodes := make([]*RemoteNode, 0)
-		// newReplicationNodes := pruneList(node.IP, copyList[:replicationFactor])
-		// oldReplicationNodes := pruneList(node.IP, node.successorList[:replicationFactor])
-		// // fmt.Println(newReplicationNodes, oldReplicationNodes)
-		// for _, newNode := range newReplicationNodes {
-		// 	if !containsNode(newNode, node.successorList[:replicationFactor]) {
-		// 		fmt.Println("Replicating", replicatedKeys, "to Node", newNode.Identifier)
-		// 		for key, value := range replicatedKeys {
-		// 			newNode.putRPC(key, value)
-		// 		}
-		// 	} else {
-		// 		repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
-		// 	}
-		// }
-		// for _, oldNode := range oldReplicationNodes {
-		// 	if !containsNode(oldNode, repeatedReplicationNodes) {
-		// 		for key := range replicatedKeys {
-		// 			oldNode.delRPC(key)
-		// 		}
-		// 	}
-		// }
+		// get keys to be replicated
+		replicatedKeys := make(map[int]string)
+		for key, value := range node.hashTable {
+			// if node.predecessor != nil {
+			// 	fmt.Println(BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier), key, node.predecessor.Identifier, node.Identifier)
+			// }
+			if node.predecessor == nil || BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
+				replicatedKeys[key] = value
+			}
+		}
+		// check for nodes that still remain as replciation node
+		repeatedReplicationNodes := make([]*RemoteNode, 0)
+		newReplicationNodes := pruneList(node.IP, copyList[:replicationFactor])
+		oldReplicationNodes := pruneList(node.IP, oldSuccessorNodes[:replicationFactor])
+		// fmt.Println(newReplicationNodes, oldReplicationNodes)
+		for _, newNode := range newReplicationNodes {
+			if !containsNode(newNode, oldSuccessorNodes[:replicationFactor]) {
+				fmt.Println("Replicating", replicatedKeys, "to Node", newNode.Identifier)
+				for key, value := range replicatedKeys {
+					newNode.putRPC(key, value)
+				}
+			} else {
+				repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
+			}
+		}
+		for _, oldNode := range oldReplicationNodes {
+			if !containsNode(oldNode, repeatedReplicationNodes) {
+				for key := range replicatedKeys {
+					oldNode.delRPC(key)
+				}
+			}
+		}
 		node.successorList = copyList
 	}
 }

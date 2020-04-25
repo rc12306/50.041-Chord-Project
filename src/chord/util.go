@@ -12,7 +12,7 @@ func Between(nodeX, nodeA, nodeB int) bool {
 	if nodeB < nodeA {
 		nodeB += ringSize
 	}
-	if nodeX < nodeB {
+	if nodeX < nodeA {
 		nodeX += ringSize
 	}
 	return nodeX > nodeA && nodeX < nodeB
@@ -23,7 +23,7 @@ func BetweenRightIncl(nodeX, nodeA, nodeB int) bool {
 	if nodeB < nodeA {
 		nodeB += ringSize
 	}
-	if nodeX < nodeB {
+	if nodeX < nodeA {
 		nodeX += ringSize
 	}
 	return nodeX > nodeA && nodeX <= nodeB
@@ -34,7 +34,7 @@ func BetweenLeftIncl(nodeX, nodeA, nodeB int) bool {
 	if nodeB < nodeA {
 		nodeB += ringSize
 	}
-	if nodeX < nodeB {
+	if nodeX < nodeA {
 		nodeX += ringSize
 	}
 	return nodeX >= nodeA && nodeX < nodeB
