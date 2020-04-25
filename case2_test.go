@@ -4,11 +4,11 @@ import (
 	"chord/src/chord"
 	"fmt"
 	"math/rand"
-	"testing"
-	"time"
 	"os"
 	"os/signal"
 	"sync"
+	"testing"
+	"time"
 )
 
 func ranDelay() {
@@ -43,6 +43,7 @@ func Test2(t *testing.T) {
 	tDelay := time.Duration(myId*100) * time.Millisecond
 	fmt.Println("\nWait for ", tDelay)
 	time.Sleep(tDelay)
+	fmt.Println("Node", myId, "has finished sleeping!")
 
 	fmt.Println("\nLooking for IPs in ring...")
 	nodesInRing, _ := chord.CheckRing()
@@ -87,9 +88,10 @@ func Test2(t *testing.T) {
 	fmt.Println("Outside: ", ipNot)
 
 	// Wait till all nodes have joint the chord ring
-	eDelay := time.Duration(90-myId) * time.Second
+	eDelay := time.Duration(10) * time.Second
 	fmt.Println("\nWait for ", eDelay)
 	time.Sleep(eDelay)
+	fmt.Println("Node", myId, "has finished sleeping!\nTest: add & search files")
 
 	// Add files into the chord ring
 	fileSlice := [5]string{"apple", "pear", "cat", "puppy", "shield"}
@@ -101,7 +103,7 @@ func Test2(t *testing.T) {
 	// fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
 
 	// Search for files
-	// searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
+	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
 	for _, search := range searchSlice {
 		// generates random delays b/w search

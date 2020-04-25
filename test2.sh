@@ -2,7 +2,7 @@
 
 # rebuild
 docker-compose build
-docker-compose up -d --scale node=3
+docker-compose up -d --scale node=5
 
 # this script runs Test1 in 3 Docker containers
 # extract all running container id
