@@ -6,6 +6,9 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+	"os"
+	"os/signal"
+	"sync"
 )
 
 func ranDelay() {
@@ -17,6 +20,11 @@ func ranDelay() {
 
 // Test1 creates the chord ring structure
 func Test2(t *testing.T) {
+	var wg sync.WaitGroup
+	wg.Add(1)
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+
 	fmt.Println("Starting test ...")
 
 	// init User IP info
@@ -90,10 +98,10 @@ func Test2(t *testing.T) {
 		fmt.Println("Adding: ", file)
 		chord.ChordNode.AddFile(file)
 	}
-	fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
+	// fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
 
 	// Search for files
-	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
+	// searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
 	for _, search := range searchSlice {
 		// generates random delays b/w search
@@ -101,7 +109,13 @@ func Test2(t *testing.T) {
 		fmt.Println("\nSearching for ", search)
 		chord.ChordNode.FindFile(search)
 	}
-	fmt.Println("\nSearch test successful!")
+	fmt.Println("\nSearch test successful! \nPress Ctrl+C to end")
+
+	go func() {
+		<-c
+		wg.Done()
+	}()
+	wg.Wait()
 
 	fmt.Println("\nTest completed.")
 }
