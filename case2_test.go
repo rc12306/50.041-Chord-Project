@@ -3,7 +3,6 @@ package main
 import (
 	"chord/src/chord"
 	"fmt"
-	"math/rand"
 	"os"
 	"os/signal"
 	"sync"
@@ -11,12 +10,12 @@ import (
 	"time"
 )
 
-func ranDelay() {
-	rand.Seed(time.Now().UnixNano())
-	ranVal := time.Millisecond * time.Duration(rand.Intn(2000))
-	fmt.Println("Delay for ", ranVal)
-	time.Sleep(ranVal)
-}
+// func ranDelay() {
+// 	rand.Seed(time.Now().UnixNano())
+// 	ranVal := time.Millisecond * time.Duration(rand.Intn(2000))
+// 	fmt.Println("Delay for ", ranVal)
+// 	time.Sleep(ranVal)
+// }
 
 // Test1 creates the chord ring structure
 func Test2(t *testing.T) {
@@ -25,7 +24,7 @@ func Test2(t *testing.T) {
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 
-	fmt.Println("Starting test ...")
+	fmt.Println("Starting test 2 ...")
 
 	// init User IP info
 	fmt.Println("\nGathering machine data ...")
@@ -40,7 +39,7 @@ func Test2(t *testing.T) {
 	fmt.Println("IPs in network: ", othersIp)
 
 	// Delay according to ID of node to avoid concurrency issues
-	tDelay := time.Duration(myId*100) * time.Millisecond
+	tDelay := time.Duration(myId*50) * time.Millisecond
 	fmt.Println("\nWait for ", tDelay)
 	time.Sleep(tDelay)
 	fmt.Println("Node", myId, "has finished sleeping!")
@@ -88,7 +87,7 @@ func Test2(t *testing.T) {
 	fmt.Println("Outside: ", ipNot)
 
 	// Wait till all nodes have joint the chord ring
-	eDelay := time.Duration(10) * time.Second
+	eDelay := time.Duration(5) * time.Second
 	fmt.Println("\nWait for ", eDelay)
 	time.Sleep(eDelay)
 	fmt.Println("Node", myId, "has finished sleeping!\nTest: add & search files")
@@ -100,24 +99,33 @@ func Test2(t *testing.T) {
 		fmt.Println("Adding: ", file)
 		chord.ChordNode.AddFile(file)
 	}
-	// fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
+
+	fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
 
 	// Search for files
 	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
+	sDelay := time.Duration(500) * time.Millisecond
 	for _, search := range searchSlice {
 		// generates random delays b/w search
-		ranDelay()
+
+		fmt.Println("Delay for", sDelay)
+		time.Sleep(sDelay)
 		fmt.Println("\nSearching for ", search)
 		chord.ChordNode.FindFile(search)
 	}
-	fmt.Println("\nSearch test successful! \nPress Ctrl+C to end")
 
-	go func() {
-		<-c
-		wg.Done()
-	}()
-	wg.Wait()
+	// to measure timing
+	fDelay := time.Duration(5) * time.Second
+	fmt.Println("\nWaiting for other nodes to finish ... ...", fDelay)
+	time.Sleep(fDelay)
+
+	// fmt.Println("\nJoin ring test successful! \nPress Ctrl+C to end")
+	// go func() {
+	// 	<-c
+	// 	wg.Done()
+	// }()
+	// wg.Wait()
 
 	fmt.Println("\nTest completed.")
 }
