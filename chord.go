@@ -65,10 +65,11 @@ func main() {
 		
 		Scan    s   		: Scan network for available nodes.
 		Init    i   		: Create and Join.
-		Print	p      		: Print node info.
-		Leave 	l     		: Leave the current chord network.
-		Find	f <fname>	: Find a file.
+		Print   p      		: Print node info.
+		Leave   l     		: Leave the current chord network.
+		Find    f <fname>	: Find a file.
 		Add     a <fname>	: Add a file.
+		Remove  r <fname>	: Remove a file.
 
 		Create 	c     		: Create a new chord network. (Deprecated)
 		Join	j <id>		: Join the chord network by specifying id. (Deprecated)
@@ -232,6 +233,26 @@ func main() {
 				// fmt.Print("	" + filename)
 
 				chord.ChordNode.AddFile(filename)
+
+				fmt.Print("\n>>>")
+
+			case "r": // REMOVE A FILE BY FILENAME
+				if chord.ChordNode.Identifier == -1 {
+					fmt.Print("Invalid node.\n>>>")
+					break
+				}
+
+				if len(inputs) <= 1 {
+					fmt.Print("Missing Variable(s)\n>>>")
+					break
+				}
+				filename := inputs[1]
+				fmt.Println("Node (" + IP + ") " + strconv.Itoa(ID) + " removing file: " + filename)
+
+				// filename := strings.Join(inputs, " ")
+				// fmt.Print("	" + filename)
+
+				chord.ChordNode.DelFile(filename)
 
 				fmt.Print("\n>>>")
 
