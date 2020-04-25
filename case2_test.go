@@ -32,7 +32,7 @@ func Test2(t *testing.T) {
 	fmt.Println("IPs in network: ", othersIp)
 
 	// Delay according to ID of node to avoid concurrency issues
-	tDelay := time.Duration(myId) * time.Second
+	tDelay := time.Duration(myId*100) * time.Millisecond
 	fmt.Println("\nWait for ", tDelay)
 	time.Sleep(tDelay)
 
