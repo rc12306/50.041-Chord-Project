@@ -106,6 +106,7 @@ func Test2(t *testing.T) {
 	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
 	sDelay := time.Duration(500) * time.Millisecond
+	startTime := time.Now()
 	for _, search := range searchSlice {
 		// generates random delays b/w search
 
@@ -115,7 +116,10 @@ func Test2(t *testing.T) {
 		chord.ChordNode.FindFile(search)
 	}
 
-	fmt.Println("\nTest completed. Wait for 10s.")
+	endTime := time.Now()
+	duration := endTime.Sub(startTime)
+
+	fmt.Println("\nTest completed | Duration: ", duration, "\nWait for 10s.")
 	time.Sleep(10*time.Second)
 
 	chord.ChordNode.ShutDown()
