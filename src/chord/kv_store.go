@@ -35,14 +35,16 @@ func (node *Node) put(key int, value string) error {
 }
 
 // delete removes key-value pair from storage
-func (node *Node) delete(key int) {
+func (node *Node) delete(key int) error {
 	node.dataStoreLock.Lock()
 	defer node.dataStoreLock.Unlock()
 	_, keyExists := node.hashTable[key]
 	if keyExists {
 		delete(node.hashTable, key)
+		return nil
 	} else {
-		log.Print("Key with identifier", key, "already does not exist in table")
+		log.Print("Key with identifier" + strconv.Itoa(key) + "already does not exist in table")
+		return errors.New("Key with identifier" + strconv.Itoa(key) + "does not exist in table")
 	}
 }
 
