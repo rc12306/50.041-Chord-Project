@@ -385,7 +385,7 @@ func handleGetValue(key int) string {
 	// Call node to make changes
 	value, err := ChordNode.get(key)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		return ""
 	}
 	return value
@@ -423,6 +423,7 @@ func (remoteNode *RemoteNode) putRPC(key int, value string) error {
 
 	// Check that put was successful
 	if reply.Msg != "Success" {
+		//log.Printf("File already exists in the table")
 		return errors.New("File already exists in the table")
 	}
 
@@ -434,7 +435,7 @@ func handlePutKeyValue(key int, value string) error {
 	// Call node to make changes
 	err := ChordNode.put(key, value)
 	if err != nil {
-		log.Println(err)
+		//log.Println(err)
 		return errors.New("File already exists in the table")
 	}
 	return nil
@@ -481,10 +482,10 @@ func (remoteNode *RemoteNode) delRPC(key int) error {
 
 func handleDelKeyValue(key int) error {
 	// Call node to make changes
-	ChordNode.delete(key)
-	// if err != nil {
-	// 	log.Println(err)
-	// 	return errors.New("File has already been removed")
-	// }
+	err := ChordNode.delete(key)
+	if err != nil {
+		log.Println(err)
+		return errors.New("File has already been removed")
+	}
 	return nil
 }

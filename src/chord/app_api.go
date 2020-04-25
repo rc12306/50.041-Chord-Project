@@ -86,3 +86,29 @@ func (node *Node) AddFile(fileName string) {
 		fmt.Println("Failed to add", fileName, "into the Chord ring")
 	}
 }
+
+// Delete file
+// DelFile allows user to delete file into the Chord ring
+func (node *Node) DelFile(fileName string) {
+	keyIdentifier := Hash(fileName)
+	nodeStored := node.findSuccessor(keyIdentifier)
+	fmt.Println(fileName, "to be deleted at Node", nodeStored.Identifier, "("+nodeStored.IP+")")
+	err := nodeStored.delRPC(keyIdentifier)
+	if err == nil {
+		fmt.Println(fileName, "has been successfully deleted from Node", nodeStored.Identifier, "("+nodeStored.IP+")")
+		fmt.Println("Deleting key across nodes for", fileName)
+		successorList, _ := nodeStored.getSuccessorListRPC()
+		replicationNodes := pruneList(nodeStored.IP, successorList[:replicationFactor])
+		for index, successorNode := range replicationNodes {
+			replicationErr := successorNode.delRPC(keyIdentifier)
+			if replicationErr == nil {
+				fmt.Println("Successfully deleted file", fileName, "in successor", index, "of", nodeStored.Identifier)
+			} else {
+				fmt.Println("Failed to delete file", fileName, "in successor", index, "of", nodeStored.Identifier)
+			}
+		}
+	} else {
+		fmt.Println(err)
+		fmt.Println("Failed to delete", fileName, "from the Chord ring")
+	}
+}
