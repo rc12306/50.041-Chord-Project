@@ -97,7 +97,9 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 		return nil
 	case "notify":
 		// Call node to make changes if necessory
-		handleNotify(payload.List[0])
+		if payload.List != nil || len(payload.List) != 0 {
+			handleNotify(payload.List[0])
+		}
 		return nil
 	case "getValue":
 		// Call node to get value from hashtable
@@ -316,11 +318,12 @@ func handleGetPredecessor() *RemoteNode {
 func (remoteNode *RemoteNode) notifyRPC(potentialPred *RemoteNode) {
 	if remoteNode == nil {
 		log.Printf("Remote node has not been set: unable to make RPC call")
+		return
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
 		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
-		// return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
+		return
 	}
 
 	// set up arguments
@@ -332,7 +335,7 @@ func (remoteNode *RemoteNode) notifyRPC(potentialPred *RemoteNode) {
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
 		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
-		// return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
+		return
 	}
 
 	client.Close()
