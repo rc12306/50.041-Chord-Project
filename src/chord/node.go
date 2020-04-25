@@ -48,9 +48,6 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 		node.successorList = make([]*RemoteNode, tableSize)
 		node.successorList[0] = successor
 		node.hashTable = make(map[int]string)
-		node.successorLock.Lock()
-		node.updateSuccessorList(0)
-		node.successorLock.Unlock()
 		node.stop = make(chan bool)
 		return nil
 	}
@@ -60,9 +57,9 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 // notifies node of remote node's existence so that node can change predecessor to remoteNode
 func (node *Node) notify(remoteNode *RemoteNode) {
 	if node.predecessor == nil || Between(remoteNode.Identifier, node.predecessor.Identifier, node.Identifier) {
-		err := node.transferKeys(remoteNode, remoteNode.Identifier, node.Identifier)
+		err := node.transferKeys(remoteNode, node.Identifier, remoteNode.Identifier)
 		if err != nil {
-			fmt.Println("Unable to transfer keys:", err)
+			fmt.Println("Failed to transfer keys:", err)
 		} else {
 			node.predecessor = remoteNode
 		}
@@ -210,42 +207,39 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int) {
 		copyList[0] = firstLiveSuccessor
 		/*
 			Handling duplicated keys:
-				1. Get primary keys of node (i.e. non-replicated keys)
+				1. Get primary keys of node i.e. keys to be replicated
 				2. Delete keys from old replication nodes
 				3. Add keys to new replication nodes
 		*/
 		// get replicated keys
-		replicatedKeys := make(map[int]string)
-		for key, value := range node.hashTable {
-			if node.predecessor == nil || BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
-				replicatedKeys[key] = value
-			}
-		}
-		// check for nodes that still remain as replciation node
-		repeatedReplicationNodes := make([]*RemoteNode, 0)
-		newReplicationNodes := pruneList(node.IP, copyList[:replicationFactor])
-		oldReplicationNodes := pruneList(node.IP, node.successorList[:replicationFactor])
-		// fmt.Println(newReplicationNodes, oldReplicationNodes)
-		for _, newNode := range newReplicationNodes {
-			if !containsNode(newNode, node.successorList[:replicationFactor]) {
-				if node != nil {
-					for key, value := range replicatedKeys {
-						newNode.putRPC(key, value)
-					}
-				}
-			} else {
-				repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
-			}
-		}
-		for _, oldNode := range oldReplicationNodes {
-			if !containsNode(oldNode, repeatedReplicationNodes) {
-				if node != nil {
-					for key := range replicatedKeys {
-						oldNode.delRPC(key)
-					}
-				}
-			}
-		}
+		// replicatedKeys := make(map[int]string)
+		// for key, value := range node.hashTable {
+		// 	if node.predecessor == nil || BetweenRightIncl(key, node.predecessor.Identifier, node.Identifier) {
+		// 		replicatedKeys[key] = value
+		// 	}
+		// }
+		// // check for nodes that still remain as replciation node
+		// repeatedReplicationNodes := make([]*RemoteNode, 0)
+		// newReplicationNodes := pruneList(node.IP, copyList[:replicationFactor])
+		// oldReplicationNodes := pruneList(node.IP, node.successorList[:replicationFactor])
+		// // fmt.Println(newReplicationNodes, oldReplicationNodes)
+		// for _, newNode := range newReplicationNodes {
+		// 	if !containsNode(newNode, node.successorList[:replicationFactor]) {
+		// 		fmt.Println("Replicating", replicatedKeys, "to Node", newNode.Identifier)
+		// 		for key, value := range replicatedKeys {
+		// 			newNode.putRPC(key, value)
+		// 		}
+		// 	} else {
+		// 		repeatedReplicationNodes = append(repeatedReplicationNodes, newNode)
+		// 	}
+		// }
+		// for _, oldNode := range oldReplicationNodes {
+		// 	if !containsNode(oldNode, repeatedReplicationNodes) {
+		// 		for key := range replicatedKeys {
+		// 			oldNode.delRPC(key)
+		// 		}
+		// 	}
+		// }
 		node.successorList = copyList
 	}
 }

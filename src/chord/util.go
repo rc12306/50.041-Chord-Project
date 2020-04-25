@@ -9,30 +9,33 @@ import (
 
 // Between checks if identifier is in range (a, b)
 func Between(nodeX, nodeA, nodeB int) bool {
-	if nodeB < nodeA && nodeX > nodeB {
+	if nodeB < nodeA {
 		nodeB += ringSize
-	} else if nodeB < nodeA && nodeX < nodeB {
-		nodeA -= ringSize
+	}
+	if nodeX < nodeB {
+		nodeX += ringSize
 	}
 	return nodeX > nodeA && nodeX < nodeB
 }
 
 // BetweenRightIncl checks if identifier is in range (a, b]
 func BetweenRightIncl(nodeX, nodeA, nodeB int) bool {
-	if nodeB < nodeA && nodeX > nodeB {
+	if nodeB < nodeA {
 		nodeB += ringSize
-	} else if nodeB < nodeA && nodeX < nodeB {
-		nodeA -= ringSize
+	}
+	if nodeX < nodeB {
+		nodeX += ringSize
 	}
 	return nodeX > nodeA && nodeX <= nodeB
 }
 
 // BetweenLeftIncl checks if identifier is in range [a, b)
 func BetweenLeftIncl(nodeX, nodeA, nodeB int) bool {
-	if nodeB < nodeA && nodeX > nodeB {
+	if nodeB < nodeA {
 		nodeB += ringSize
-	} else if nodeB < nodeA && nodeX < nodeB {
-		nodeA -= ringSize
+	}
+	if nodeX < nodeB {
+		nodeX += ringSize
 	}
 	return nodeX >= nodeA && nodeX < nodeB
 }

@@ -2,6 +2,7 @@ package chord
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 )
@@ -48,22 +49,34 @@ func (node *Node) delete(key int) error {
 	}
 }
 
-// TransferKeys allow reassignment of keys on node join/fail
+// check if key exists
+func (node *Node) keyExists(key int) bool {
+	_, keyExists := node.hashTable[key]
+	return keyExists
+}
+
+// TransferKeys allow reassignment of keys on node join/fail for keys in (start, end]
 func (node *Node) transferKeys(targetNode *RemoteNode, start int, end int) error {
 	node.dataStoreLock.Lock()
 	defer node.dataStoreLock.Unlock()
 	keysToDelete := make([]int, 0)
 	for keyIdentifier, fileName := range node.hashTable {
-		if BetweenLeftIncl(keyIdentifier, start, end) {
+		if BetweenRightIncl(keyIdentifier, start, end) {
+			fmt.Println("Transferring key", keyIdentifier, "to Node", targetNode.Identifier)
+			// keyExists, err := targetNode.keyExistsRPC(keyIdentifier)
+			// if err != nil {
+			// return err
+			// } else if !keyExists {
 			err := targetNode.putRPC(keyIdentifier, fileName)
-			if err == nil {
-				keysToDelete = append(keysToDelete, keyIdentifier)
-			} else {
-				return errors.New("Unable to transfer file " + fileName)
+			if err != nil {
+				return errors.New("Unable to transfer file " + fileName + " to Node " + strconv.Itoa(targetNode.Identifier))
 			}
+			// }
+			keysToDelete = append(keysToDelete, keyIdentifier)
 		}
 	}
-	for key := range keysToDelete {
+	for _, key := range keysToDelete {
+		fmt.Println("Deleting key", key)
 		delete(node.hashTable, key)
 	}
 	return nil
