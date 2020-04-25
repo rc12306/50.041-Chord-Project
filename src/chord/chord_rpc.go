@@ -2,7 +2,6 @@ package chord
 
 import (
 	"errors"
-	"log"
 
 	// "net"
 	"net/rpc"
@@ -143,13 +142,13 @@ func (remoteNode *RemoteNode) ping() bool {
 	// try to handshake with other node
 	// fmt.Println("Ping")
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return false
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
 		// if handshake failed then the node is not even alive
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return false
 	}
 
@@ -161,7 +160,7 @@ func (remoteNode *RemoteNode) ping() bool {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return false
 	}
 	// fmt.Println(reply.SenderIP + " is alive. ")
@@ -189,14 +188,14 @@ func pong() {
 func (remoteNode *RemoteNode) findSuccessorRPC(id int) (*RemoteNode, error) {
 	// connect to remote node and ask it to run findsuccessor()
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return nil, errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	// query closest predecessor
 	// get closestPred IP
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
@@ -207,7 +206,7 @@ func (remoteNode *RemoteNode) findSuccessorRPC(id int) (*RemoteNode, error) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 	client.Close()
@@ -235,12 +234,12 @@ func answer() {
 */
 func (remoteNode *RemoteNode) getSuccessorListRPC() ([]*RemoteNode, error) {
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return nil, errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
@@ -251,7 +250,7 @@ func (remoteNode *RemoteNode) getSuccessorListRPC() ([]*RemoteNode, error) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
@@ -276,12 +275,12 @@ func handleGetSuccesorList() []*RemoteNode {
 */
 func (remoteNode *RemoteNode) getPredecessorRPC() (*RemoteNode, error) {
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return nil, errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return nil, errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
@@ -292,7 +291,7 @@ func (remoteNode *RemoteNode) getPredecessorRPC() (*RemoteNode, error) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
@@ -317,12 +316,12 @@ func handleGetPredecessor() *RemoteNode {
 */
 func (remoteNode *RemoteNode) notifyRPC(potentialPred *RemoteNode) {
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return
 	}
 
@@ -334,7 +333,7 @@ func (remoteNode *RemoteNode) notifyRPC(potentialPred *RemoteNode) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return
 	}
 
@@ -356,12 +355,12 @@ func handleNotify(potentialPred *RemoteNode) {
 */
 func (remoteNode *RemoteNode) getRPC(key int) (string, error) {
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return "", errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return "", errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
@@ -372,7 +371,7 @@ func (remoteNode *RemoteNode) getRPC(key int) (string, error) {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return "", errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 	// Return error if key does not exist in hashtable
@@ -404,12 +403,12 @@ func handleGetValue(key int) string {
 */
 func (remoteNode *RemoteNode) putRPC(key int, value string) error {
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
@@ -420,7 +419,7 @@ func (remoteNode *RemoteNode) putRPC(key int, value string) error {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
@@ -454,12 +453,12 @@ func handlePutKeyValue(key int, value string) error {
 */
 func (remoteNode *RemoteNode) delRPC(key int) error {
 	if remoteNode == nil {
-		log.Printf("Remote node has not been set: unable to make RPC call")
+		//log.Printf("Remote node has not been set: unable to make RPC call")
 		return errors.New("Remote node has not been set: unable to make RPC call")
 	}
 	client, err := rpc.Dial("tcp", remoteNode.IP+":8081")
 	if err != nil {
-		log.Printf("Remote node has not started accepting connections: unable to make RPC call")
+		//log.Printf("Remote node has not started accepting connections: unable to make RPC call")
 		return errors.New("Remote node has not started accepting connections: unable to make RPC call")
 	}
 
@@ -470,7 +469,7 @@ func (remoteNode *RemoteNode) delRPC(key int) error {
 	// and make an rpc call
 	err = client.Call("Listener.Receive", payload, &reply)
 	if err != nil {
-		log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
+		//log.Printf("Remote node closed connection abruptly: unable to complete RPC call")
 		return errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 

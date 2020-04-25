@@ -3,7 +3,6 @@ package chord
 import (
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"strconv"
 	"sync"
@@ -168,7 +167,7 @@ func (node *Node) findSuccessor(id int) *RemoteNode {
 		time.Sleep(time.Second)
 		successor, err := n.findSuccessorRPC(id)
 		if err != nil {
-			log.Fatal("Node is unable to find successor for identifier", id)
+			//log.Fatal("Node is unable to find successor for identifier", id)
 		}
 		return successor
 	}
