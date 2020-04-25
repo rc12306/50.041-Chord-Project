@@ -115,10 +115,18 @@ func Test2(t *testing.T) {
 		chord.ChordNode.FindFile(search)
 	}
 
+	fmt.Println("\nTest completed. Wait for 10s.")
+	time.Sleep(10*time.Second)
+
+	chord.ChordNode.ShutDown()
+	chord.ChordNode = &chord.Node{}
+	chord.ChordNode.Identifier = -1
+	fmt.Print("Left chord network (" + myIp + ") as " + fmt.Sprint(myId) + ".\n")
+
 	// to measure timing
-	fDelay := time.Duration(5) * time.Second
-	fmt.Println("\nWaiting for other nodes to finish ... ...", fDelay)
-	time.Sleep(fDelay)
+	// fDelay := time.Duration(5) * time.Second
+	// fmt.Println("\nWaiting for other nodes to finish ... ...", fDelay)
+	// time.Sleep(fDelay)
 
 	// fmt.Println("\nJoin ring test successful! \nPress Ctrl+C to end")
 	// go func() {
@@ -126,6 +134,4 @@ func Test2(t *testing.T) {
 	// 	wg.Done()
 	// }()
 	// wg.Wait()
-
-	fmt.Println("\nTest completed.")
 }
