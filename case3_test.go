@@ -18,7 +18,7 @@ func ranDelay() {
 	time.Sleep(ranVal)
 }
 
-func Test2(t *testing.T) {
+func Test3(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	c := make(chan os.Signal)
