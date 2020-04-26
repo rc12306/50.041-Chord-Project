@@ -84,6 +84,36 @@ func initRing() ([]string, string, int) {
 	return ipRing, myIp, myId
 }
 
+func addFiles(addChan chan bool, allIp []string, myIp string) {
+	// Add files into the chord ring
+	fileSlice := [5]string{"a", "b", "c", "d", "e"}
+	if (allIp[len(allIp)-1] == myIp) {
+		addChan <- true
+		fmt.Println("\nAdding files into Node ", myIp)
+		for _, file := range fileSlice {
+			chord.ChordNode.AddFile(file)
+		}
+		addChan <- true
+	} else {
+		time.Sleep(time.Duration(len(allIp) * 5)*time.Second)
+		addChan <- false
+	}
+	return
+}
+
+func searchFiles(searchChan chan bool) {
+	// Search for files
+	searchSlice := [5]string{"a", "b", "c", "d", "e"}
+	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
+	for _, search := range searchSlice {
+		fmt.Println("\nSearching for ", search)
+		chord.ChordNode.FindFile(search)
+	}
+	searchChan <- true
+	fmt.Println("\nInitial search completed.")
+	return
+}
+
 func Test3(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 
@@ -93,7 +123,7 @@ func Test3(t *testing.T) {
 	signal.Notify(c, os.Interrupt)
 
 	// Create ring
-	ipRing, myIp, myId := initRing()
+	ipRing, myIp, _ := initRing()
 
 	// Add files to one node in chord ring (e.g. node with biggest identifier)
 	allIp := append(ipRing, myIp)
@@ -102,53 +132,40 @@ func Test3(t *testing.T) {
 	DELAY_CONST := len(allIp) * 5
 	time.Sleep(time.Duration(DELAY_CONST)*time.Second)
 
-	// Add files into the chord ring
-	fileSlice := [5]string{"a", "b", "c", "d", "e"}
-	if (allIp[len(allIp)-1] == myIp) {
-		fmt.Println("Adding files into Node ", myIp)
-		for _, file := range fileSlice {
-			chord.ChordNode.AddFile(file)
-		}
-	} else {
-		time.Sleep(time.Duration(DELAY_CONST)*time.Second)
-	}
+	addChan := make(chan bool)
+	searchChan := make(chan bool)
 
-	// Search for files
-	searchSlice := [5]string{"a", "b", "c", "d", "e"}
-	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
-	for _, search := range searchSlice {
-		// generates random delays b/w search
-		// ranDelay()
-		fmt.Println("\nSearching for ", search)
-		chord.ChordNode.FindFile(search)
-	}
+	go addFiles(addChan, allIp, myIp)
+	_ = <- addChan
 
-	hashTable := chord.ChordNode.ReturnHash()
+	go searchFiles(searchChan)
+	_ = <- searchChan
 
-	// fmt.Println("\nInitial search completed! | storedNode: ", nodeStoredIp)
-	// time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+	// hashTable := chord.ChordNode.ReturnHash()
 
 	// Remove node storing the file
-	if (len(hashTable) != 0) {
-		chord.ChordNode.ShutDown()
-		chord.ChordNode = &chord.Node{}
-		chord.ChordNode.Identifier = -1
-		fmt.Print("Left chord network (" + myIp + ") as " + fmt.Sprint(myId) + ".\n")
-	} else { // else, search again
-		time.Sleep(time.Duration(DELAY_CONST)*time.Second)
-		_, othersIp := chord.NetworkIP()
-		fmt.Println("IPs in network: ", othersIp)
-		if (len(othersIp) == len(allIp)) {
-			fmt.Println("One node has left the network!")
-			time.Sleep(time.Duration(DELAY_CONST)*time.Second)
-			searchSlice2 := [5]string{"a", "b", "c", "d", "e"}
-			fmt.Println("\nRestart search...")
-			for _, search := range searchSlice2 {
-				fmt.Println("\nSearching for ", search)
-				chord.ChordNode.FindFile(search)
-			}
-		}
-	}
+	// if (len(hashTable) != 0) {
+	// 	fmt.Println("Node will leave network.")
+	// 	chord.ChordNode.ShutDown()
+	// 	chord.ChordNode = &chord.Node{}
+	// 	chord.ChordNode.Identifier = -1
+	// 	fmt.Print("Left chord network (" + myIp + ") as " + fmt.Sprint(myId) + ".\n")
+	// }
+	// } else { // else, search again
+	// 	time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+	// 	_, othersIp := chord.NetworkIP()
+	// 	fmt.Println("IPs in network: ", othersIp)
+	// 	if (len(othersIp) == len(allIp)) {
+	// 		fmt.Println("One node has left the network!")
+	// 		time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+	// 		searchSlice2 := [5]string{"a", "b", "c", "d", "e"}
+	// 		fmt.Println("\nRestart search...")
+	// 		for _, search := range searchSlice2 {
+	// 			fmt.Println("\nSearching for ", search)
+	// 			chord.ChordNode.FindFile(search)
+	// 		}
+	// 	}
+	// }
 
 	go func() {
 		<-c
