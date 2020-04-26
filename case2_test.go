@@ -88,7 +88,7 @@ func AllAddFiles() {
 }
 
 // Search for files by all nodes
-func SearchMyFiles(myId int) {
+func SearchMyFiles() {
 	fileSlice := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
 
 	fmt.Println("\n------------------------------------------------------------------------------")
@@ -111,11 +111,11 @@ func SearchMyFiles(myId int) {
 	fmt.Println("------------------------------------------------------------------------------")
 }
 
-func SearchTest(myId int, myIp string) {
+func SearchTest(myIp string) {
 	selIp1 := IpSelect(myIp, "3")
 
 	if myIp == selIp1 {
-		SearchMyFiles(myId)
+		SearchMyFiles()
 	}
 }
 
@@ -131,7 +131,7 @@ func Test2(t *testing.T) {
 	// get machine data
 	myIp, myId := InitNode()
 
-	randomDelay(0, 30)
+	StaticDelay(myId, "milliseconds")
 
 	// test 1 create/join ring function
 	InitRing(myIp, myId)
@@ -153,7 +153,7 @@ func Test2(t *testing.T) {
 	StaticDelay(5, "")
 
 	// test 2.2 search files
-	SearchMyFiles(myId)
+	SearchMyFiles()
 
 	// wait for exit
 	fmt.Println("\nWaiting to exit ...\nPress crtl+c to continue")

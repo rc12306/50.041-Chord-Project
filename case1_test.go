@@ -120,7 +120,7 @@ func Test1(t *testing.T) {
 	// get machine data
 	myIp, myId := InitNode()
 
-	randomDelay(0, 30)
+	StaticDelay(myId, "milliseconds")
 
 	// test create/join ring function
 	InitRing(myIp, myId)
