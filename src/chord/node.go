@@ -48,6 +48,8 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 		node.successorList[0] = successor
 		go func(sucessor *RemoteNode) {
 			time.Sleep(time.Second * 3)
+			node.dataStoreLock.RLock()
+			defer node.dataStoreLock.RUnlock()
 			// Wait to receive keys and send them to successor for replication
 			replicatedKeys := make(map[int]string)
 			for key, value := range node.hashTable {
