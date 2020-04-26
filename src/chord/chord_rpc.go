@@ -473,7 +473,7 @@ func (remoteNode *RemoteNode) delRPC(key int) error {
 		return errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 
-	// Check that put was successful
+	// Check that delete was successful
 	if reply.Msg != "Success" {
 		return errors.New("File has already been removed")
 	}

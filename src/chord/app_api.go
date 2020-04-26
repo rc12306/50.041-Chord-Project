@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 )
 
@@ -76,9 +77,9 @@ func (node *Node) AddFile(fileName string) {
 		for index, successorNode := range replicationNodes {
 			replicationErr := successorNode.putRPC(keyIdentifier, fileName)
 			if replicationErr == nil {
-				fmt.Println("Successfully replicated file", fileName, "in successor", index, "of", nodeStored.Identifier)
+				fmt.Println("Successfully replicated file", fileName, "in successor", index, "(Node", strconv.Itoa(successorNode.Identifier)+")", "of", nodeStored.Identifier)
 			} else {
-				fmt.Println("Failed to replicate file", fileName, "in successor", index, "of", nodeStored.Identifier)
+				fmt.Println("Failed to replicate file", fileName, "in successor", index, "(Node", strconv.Itoa(successorNode.Identifier)+")", "of", nodeStored.Identifier)
 			}
 		}
 	} else {
@@ -102,9 +103,9 @@ func (node *Node) DelFile(fileName string) {
 		for index, successorNode := range replicationNodes {
 			replicationErr := successorNode.delRPC(keyIdentifier)
 			if replicationErr == nil {
-				fmt.Println("Successfully deleted file", fileName, "in successor", index, "of", nodeStored.Identifier)
+				fmt.Println("Successfully deleted file", fileName, "in successor", index, "(Node", strconv.Itoa(successorNode.Identifier)+")", "of", nodeStored.Identifier)
 			} else {
-				fmt.Println("File", fileName, "has been deleted in successor", index, "of", nodeStored.Identifier)
+				fmt.Println("Failed to delete", fileName, "from successor", index, "(Node", strconv.Itoa(successorNode.Identifier)+")", "of", nodeStored.Identifier)
 			}
 		}
 	} else {
