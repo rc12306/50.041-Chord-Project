@@ -19,7 +19,7 @@ func ranDelay() {
 	time.Sleep(ranVal)
 }
 
-func initRing() ([]string, string) {
+func initRing() ([]string, string, int) {
 	fmt.Println("Starting test ...")
 
 	// init User IP info
@@ -81,7 +81,7 @@ func initRing() ([]string, string) {
 	fmt.Println("\nin RING: ", ipRing)
 	fmt.Println("Outside: ", ipNot)
 
-	return ipRing, myIp
+	return ipRing, myIp, myId
 }
 
 func Test3(t *testing.T) {
@@ -93,7 +93,7 @@ func Test3(t *testing.T) {
 	signal.Notify(c, os.Interrupt)
 
 	// Create ring
-	ipRing, myIp := initRing()
+	ipRing, myIp, _ := initRing()
 
 	// Add files to one node in chord ring (e.g. node with biggest identifier)
 	allIp := append(ipRing, myIp)
@@ -106,7 +106,6 @@ func Test3(t *testing.T) {
 	if (allIp[len(allIp)-1] == myIp) {
 		fmt.Println("Adding files into Node ", myIp)
 		for _, file := range fileSlice {
-			fmt.Println("Adding: ", file , " | Hash: ", chord.Hash(file))
 			chord.ChordNode.AddFile(file)
 		}
 	} else {
@@ -114,6 +113,7 @@ func Test3(t *testing.T) {
 	}
 
 	// Search for files
+	// var nodeStoredIp string
 	searchSlice := [5]string{"a", "b", "c", "d", "e"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
 	for _, search := range searchSlice {
@@ -121,7 +121,35 @@ func Test3(t *testing.T) {
 		// ranDelay()
 		fmt.Println("\nSearching for ", search)
 		chord.ChordNode.FindFile(search)
+		// nodeStoredIp := *chord.ChordNode
+		// fmt.Println("File stored at Node: ", nodeStoredIp)
 	}
+
+	// fmt.Println("\nInitial search completed! | storedNode: ", nodeStoredIp)
+	// time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+
+	// Remove node storing the file
+	// if (myIp == nodeStoredIp) {
+	// 	chord.ChordNode.ShutDown()
+	// 	chord.ChordNode = &chord.Node{}
+	// 	chord.ChordNode.Identifier = -1
+	// 	fmt.Print("Left chord network (" + myIp + ") as " + fmt.Sprint(myId) + ".\n")
+	// } else { // else, search again
+	// 	time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+	// 	_, othersIp := chord.NetworkIP()
+	// 	fmt.Println("IPs in network: ", othersIp)
+	// 	if (len(othersIp) == len(allIp)) {
+	// 		fmt.Println("One node has left the network!")
+	// 		time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+	// 		// searchSlice2 := [5]string{"a", "b", "c", "d", "e"}
+	// 	// 	fmt.Println("\nRestart search...")
+	// 	// 	for _, search := range searchSlice2 {
+	// 	// 		fmt.Println("\nSearching for ", search)
+	// 	// 		nodeStoredIp = (*chord.ChordNode).IP
+	// 	// 		chord.ChordNode.FindFile(search)
+	// 	// 	}
+	// 	}
+	// }
 
 	go func() {
 		<-c
