@@ -5,137 +5,133 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 )
 
-// func ranDelay() {
-// 	rand.Seed(time.Now().UnixNano())
-// 	ranVal := time.Millisecond * time.Duration(rand.Intn(2000))
-// 	fmt.Println("Delay for ", ranVal)
-// 	time.Sleep(ranVal)
-// }
+// only select 1 node to execute job
+func IpSelect(myIp string) string {
+	newIp := ""
+	ipSlice := strings.Split(myIp, ".")
+	ipLen := len(ipSlice)
+	// fmt.Println("ipSlice:", ipSlice)
+	// fmt.Println("ipLen:", ipLen)
 
-// Test1 creates the chord ring structure
+	if ipLen > 0 {
+		ipSlice[ipLen-1] = "2"
+		//fmt.Println("ipSlice:", ipSlice)
+
+		for i := 0; i < ipLen-1; i++ {
+			newIp += ipSlice[i] + "."
+			// fmt.Println("newIp:", newIp)
+		}
+		newIp += ipSlice[ipLen-1]
+	}
+	// fmt.Println("newIp:", newIp)
+	return newIp
+}
+
+// Add files into ring by 1 node
+func AddMyFiles(myIp string) {
+	selIp := IpSelect(myIp)
+
+	if myIp == selIp {
+		fileSlice := []string{"a", "c", "e", "g", "i"}
+
+		fmt.Println("\n------------------------------------------------------------------------------")
+		fmt.Println("Test 2.1: Add", fileSlice, "into ring ...")
+		start21 := time.Now()
+
+		for _, file := range fileSlice {
+			start22 := time.Now()
+			fmt.Println("\nAdding file ", file, "...")
+			chord.ChordNode.AddFile(file)
+			end22 := time.Now()
+			duration22 := end22.Sub(start22)
+			fmt.Println("Each file took", duration22, "to add!")
+		}
+		end21 := time.Now()
+		duration21 := end21.Sub(start21)
+		fmt.Println("\nTest 2.1 COMPLETED!!!")
+		fmt.Println("Duration:", duration21, "to add!")
+		fmt.Println("------------------------------------------------------------------------------")
+	} else {
+		fmt.Println("\nWaiting for files to be added ...")
+		StaticDelay(10, ".")
+		fmt.Println("Done waiting!")
+	}
+}
+
+// Search for files by all nodes
+func SearchMyFiles() {
+	fileSlice := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
+
+	fmt.Println("\n------------------------------------------------------------------------------")
+	fmt.Println("Test 2.2: Search", fileSlice, "in ring ...")
+	start21 := time.Now()
+
+	for _, file := range fileSlice {
+		start22 := time.Now()
+		fmt.Println("\nSearching file ", file, "...")
+		chord.ChordNode.FindFile(file)
+		end22 := time.Now()
+		duration22 := end22.Sub(start22)
+		fmt.Println("Search took", duration22)
+	}
+
+	end21 := time.Now()
+	duration21 := end21.Sub(start21)
+	fmt.Println("\nTest 2.2 COMPLETED!!!")
+	fmt.Println("Duration:", duration21, "to add!")
+	fmt.Println("------------------------------------------------------------------------------")
+}
+
+// Test2 add& search for files
 func Test2(t *testing.T) {
+	fmt.Println("Starting test 2 ...")
+
+	// create waitGroup for user defined pause
 	var wg sync.WaitGroup
-	wg.Add(1)
 	c := make(chan os.Signal)
 	signal.Notify(c, os.Interrupt)
 
-	fmt.Println("Starting test 2 ...")
+	// get machine data
+	myIp, myId := InitNode()
 
-	// init User IP info
-	fmt.Println("\nGathering machine data ...")
-	myIp := chord.GetOutboundIP()
-	myId := chord.Hash(myIp)
-	fmt.Println("IP: ", myIp)
-	fmt.Println("ID: ", myId)
+	StaticDelay(myId, "milliseconds")
 
-	// Scan for IPs in network
-	fmt.Println("\nScanning network ... ...")
-	_, othersIp := chord.NetworkIP()
-	fmt.Println("IPs in network: ", othersIp)
+	// test 1 create/join ring function
+	InitRing(myIp, myId)
 
-	// Delay according to ID of node to avoid concurrency issues
-	tDelay := time.Duration(myId*50) * time.Millisecond
-	fmt.Println("\nWait for ", tDelay)
-	time.Sleep(tDelay)
-	fmt.Println("Node", myId, "has finished sleeping!")
-
-	fmt.Println("\nLooking for IPs in ring...")
-	nodesInRing, _ := chord.CheckRing()
-	fmt.Println("Current IPs in Ring: ", nodesInRing)
-
-	fmt.Println("\nCreating node ...")
-	chord.ChordNode = &chord.Node{
-		Identifier: myId,
-		IP:         myIp,
-	}
-	fmt.Println("\nActivating node ...")
-	go node_listen(myIp)
-
-	// Create/Join ring
-	if len(nodesInRing) < 1 {
-		// Chord ring NOT exists
-		// Create new ring
-		fmt.Println("\nCreating new ring at ", myIp)
-		chord.ChordNode.CreateNodeAndJoin(nil)
-		fmt.Println("New ring successfully created!")
-	} else {
-		// Chord ring exists
-		// Join chord ring via a node in the ring
-		Ip := nodesInRing[0]
-		Id := chord.Hash(Ip)
-		remoteNode := &chord.RemoteNode{
-			Identifier: Id,
-			IP:         Ip,
-		}
-
-		chord.ChordNode.IP = Ip
-		chord.ChordNode.Identifier = Id
-
-		fmt.Println("\nJoining existing ring at ", Ip)
-		chord.ChordNode.CreateNodeAndJoin(remoteNode)
-		fmt.Println("Node ", myId, " successfully joined node!")
-	}
+	StaticDelay(5, "")
 
 	// Update new chord ring
+	fmt.Println("\nAll nodes completed test 1\nChecking chord ring details ...")
 	ipRing, ipNot := chord.CheckRing()
 	fmt.Println("\nin RING: ", ipRing)
 	fmt.Println("Outside: ", ipNot)
+	chord.ChordNode.PrintNode()
 
-	// Wait till all nodes have joined the chord ring
-	eDelay := time.Duration(20) * time.Second
-	fmt.Println("\nWait for ", eDelay)
-	time.Sleep(eDelay)
-	fmt.Println("Node", myId, "has finished sleeping!\nTest: add & search files")
+	StaticDelay(1, "")
 
-	// Add files into the chord ring
-	fileSlice := [5]string{"a", "b", "c", "d", "e"}
-	fmt.Println("\nTesting ... \nAdding files into Chord Ring ...")
-	for _, file := range fileSlice {
-		fmt.Println("Adding: ", file)
-		chord.ChordNode.AddFile(file)
-	}
+	// test 2.1 add files
+	AddMyFiles(myIp)
 
-	fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
+	StaticDelay(5, "")
 
-	// Search for files
-	searchSlice := [8]string{"a", "b", "c", "d", "e", "f", "g", "h"}
-	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
-	sDelay := time.Duration(500) * time.Millisecond
-	startTime := time.Now()
-	for _, search := range searchSlice {
-		// generates random delays b/w search
+	// test 2.2 search files
+	SearchMyFiles()
 
-		fmt.Println("Delay for", sDelay)
-		time.Sleep(sDelay)
-		fmt.Println("\nSearching for ", search)
-		chord.ChordNode.FindFile(search)
-	}
+	// wait for exit
+	fmt.Println("\nWaiting to exit ...\nPress crtl+c to continue")
+	wg.Add(1)
+	go func() {
+		<-c
+		wg.Done()
+	}()
+	wg.Wait()
 
-	endTime := time.Now()
-	duration := endTime.Sub(startTime)
-
-	fmt.Println("\nTest completed | Duration: ", duration, "\nWait for 10s.")
-	time.Sleep(20*time.Second)
-
-	chord.ChordNode.ShutDown()
-	chord.ChordNode = &chord.Node{}
-	chord.ChordNode.Identifier = -1
-	fmt.Print("Left chord network (" + myIp + ") as " + fmt.Sprint(myId) + ".\n")
-
-	// to measure timing
-	// fDelay := time.Duration(5) * time.Second
-	// fmt.Println("\nWaiting for other nodes to finish ... ...", fDelay)
-	// time.Sleep(fDelay)
-
-	// fmt.Println("\nJoin ring test successful! \nPress Ctrl+C to end")
-	// go func() {
-	// 	<-c
-	// 	wg.Done()
-	// }()
-	// wg.Wait()
+	fmt.Println("\nTest completed.")
 }
