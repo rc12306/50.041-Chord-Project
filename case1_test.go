@@ -3,6 +3,7 @@ package main
 import (
 	"chord/src/chord"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"sync"
@@ -24,6 +25,19 @@ func StaticDelay(val int, len string) {
 		time.Sleep(delay)
 		fmt.Println("Node awoken!!!")
 	}
+}
+
+func GenRand(min int, max int) int {
+	rand.Seed(time.Now().UnixNano())
+	ranVal := rand.Intn(max-min+1) + min
+	return ranVal
+}
+
+// gnerate random delay
+func randomDelay(min int, max int) {
+	ranVal := GenRand(min, max) * GenRand(min, max)
+	fmt.Println("Delayed for ", ranVal, "ms ... ...")
+	time.Sleep(time.Millisecond * time.Duration(ranVal))
 }
 
 func InitNode() (string, int) {
@@ -79,8 +93,8 @@ func InitRing(myIp string, myId int) {
 			IP:         remoteIp,
 		}
 
-		chord.ChordNode.IP = remoteIp
-		chord.ChordNode.Identifier = remoteId
+		chord.ChordNode.IP = myIp
+		chord.ChordNode.Identifier = myId
 
 		fmt.Println("Joining ring via ", remoteId, "(", remoteIp, ")")
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
@@ -106,7 +120,7 @@ func Test1(t *testing.T) {
 	// get machine data
 	myIp, myId := InitNode()
 
-	StaticDelay(myId, "milliseconds")
+	randomDelay(0, 30)
 
 	// test create/join ring function
 	InitRing(myIp, myId)

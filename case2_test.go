@@ -12,7 +12,7 @@ import (
 )
 
 // only select 1 node to execute job
-func IpSelect(myIp string) string {
+func IpSelect(myIp string, sel string) string {
 	newIp := ""
 	ipSlice := strings.Split(myIp, ".")
 	ipLen := len(ipSlice)
@@ -20,7 +20,7 @@ func IpSelect(myIp string) string {
 	// fmt.Println("ipLen:", ipLen)
 
 	if ipLen > 0 {
-		ipSlice[ipLen-1] = "2"
+		ipSlice[ipLen-1] = sel
 		//fmt.Println("ipSlice:", ipSlice)
 
 		for i := 0; i < ipLen-1; i++ {
@@ -35,7 +35,7 @@ func IpSelect(myIp string) string {
 
 // Add files into ring by 1 node
 func AddMyFiles(myIp string) {
-	selIp := IpSelect(myIp)
+	selIp := IpSelect(myIp, "2")
 
 	if myIp == selIp {
 		fileSlice := []string{"a", "c", "e", "g", "i"}
@@ -55,7 +55,7 @@ func AddMyFiles(myIp string) {
 		end21 := time.Now()
 		duration21 := end21.Sub(start21)
 		fmt.Println("\nTest 2.1 COMPLETED!!!")
-		fmt.Println("Duration:", duration21, "to add!")
+		fmt.Println("Duration:", duration21)
 		fmt.Println("------------------------------------------------------------------------------")
 	} else {
 		fmt.Println("\nWaiting for files to be added ...")
@@ -64,8 +64,31 @@ func AddMyFiles(myIp string) {
 	}
 }
 
+func AllAddFiles() {
+	fileSlice := []string{"a", "c", "e", "g", "i"}
+
+	fmt.Println("\n------------------------------------------------------------------------------")
+	fmt.Println("Test 2.1: Add", fileSlice, "into ring ...")
+	start21 := time.Now()
+
+	for _, file := range fileSlice {
+		start22 := time.Now()
+		fmt.Println("\nAdding file ", file, "...")
+		chord.ChordNode.AddFile(file)
+		end22 := time.Now()
+		duration22 := end22.Sub(start22)
+		fmt.Println("Each file took", duration22, "to add!")
+	}
+	end21 := time.Now()
+	duration21 := end21.Sub(start21)
+	fmt.Println("\nTest 2.1 COMPLETED!!!")
+	fmt.Println("Duration:", duration21)
+	fmt.Println("------------------------------------------------------------------------------")
+
+}
+
 // Search for files by all nodes
-func SearchMyFiles() {
+func SearchMyFiles(myId int) {
 	fileSlice := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
 
 	fmt.Println("\n------------------------------------------------------------------------------")
@@ -84,8 +107,16 @@ func SearchMyFiles() {
 	end21 := time.Now()
 	duration21 := end21.Sub(start21)
 	fmt.Println("\nTest 2.2 COMPLETED!!!")
-	fmt.Println("Duration:", duration21, "to add!")
+	fmt.Println("Duration:", duration21)
 	fmt.Println("------------------------------------------------------------------------------")
+}
+
+func SearchTest(myId int, myIp string) {
+	selIp1 := IpSelect(myIp, "3")
+
+	if myIp == selIp1 {
+		SearchMyFiles(myId)
+	}
 }
 
 // Test2 add& search for files
@@ -100,7 +131,7 @@ func Test2(t *testing.T) {
 	// get machine data
 	myIp, myId := InitNode()
 
-	StaticDelay(myId, "milliseconds")
+	randomDelay(0, 30)
 
 	// test 1 create/join ring function
 	InitRing(myIp, myId)
@@ -117,12 +148,12 @@ func Test2(t *testing.T) {
 	StaticDelay(1, "")
 
 	// test 2.1 add files
-	AddMyFiles(myIp)
+	AllAddFiles()
 
 	StaticDelay(5, "")
 
 	// test 2.2 search files
-	SearchMyFiles()
+	SearchMyFiles(myId)
 
 	// wait for exit
 	fmt.Println("\nWaiting to exit ...\nPress crtl+c to continue")
