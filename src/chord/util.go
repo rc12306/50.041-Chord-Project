@@ -47,7 +47,7 @@ func Hash(key string) int {
 	result := hash.Sum(nil)
 	//fmt.Println("Hashed result:", result)
 	// return int(binary.BigEndian.Uint64(result) % ringSize)
-	return int(binary.BigEndian.Uint64(result))
+	return int(binary.BigEndian.Uint64(result) % ringSize)
 }
 
 // PrintNode prints the node info in a formatted way
@@ -80,4 +80,8 @@ func (node *Node) PrintNode() {
 	print += "\n========================================================="
 
 	fmt.Println(print)
+}
+
+func (node *Node) ReturnHash() map[int]string {
+	return node.hashTable
 }
