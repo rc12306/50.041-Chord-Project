@@ -46,8 +46,8 @@ func Hash(key string) int {
 	hash.Write([]byte(key))
 	result := hash.Sum(nil)
 	//fmt.Println("Hashed result:", result)
-	// return int(binary.BigEndian.Uint64(result) % ringSize)
-	return int(binary.BigEndian.Uint64(result))
+	return int(binary.BigEndian.Uint64(result) % ringSize)
+	// return int(binary.BigEndian.Uint64(result))
 }
 
 // PrintNode prints the node info in a formatted way
