@@ -86,14 +86,14 @@ func Test2(t *testing.T) {
 	fmt.Println("\nin RING: ", ipRing)
 	fmt.Println("Outside: ", ipNot)
 
-	// Wait till all nodes have joint the chord ring
-	eDelay := time.Duration(5) * time.Second
+	// Wait till all nodes have joined the chord ring
+	eDelay := time.Duration(20) * time.Second
 	fmt.Println("\nWait for ", eDelay)
 	time.Sleep(eDelay)
 	fmt.Println("Node", myId, "has finished sleeping!\nTest: add & search files")
 
 	// Add files into the chord ring
-	fileSlice := [5]string{"apple", "pear", "cat", "puppy", "shield"}
+	fileSlice := [5]string{"a", "b", "c", "d", "e"}
 	fmt.Println("\nTesting ... \nAdding files into Chord Ring ...")
 	for _, file := range fileSlice {
 		fmt.Println("Adding: ", file)
@@ -103,7 +103,7 @@ func Test2(t *testing.T) {
 	fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
 
 	// Search for files
-	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
+	searchSlice := [8]string{"a", "b", "c", "d", "e", "f", "g", "h"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
 	sDelay := time.Duration(500) * time.Millisecond
 	startTime := time.Now()
@@ -120,7 +120,7 @@ func Test2(t *testing.T) {
 	duration := endTime.Sub(startTime)
 
 	fmt.Println("\nTest completed | Duration: ", duration, "\nWait for 10s.")
-	time.Sleep(10*time.Second)
+	time.Sleep(20*time.Second)
 
 	chord.ChordNode.ShutDown()
 	chord.ChordNode = &chord.Node{}
