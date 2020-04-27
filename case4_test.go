@@ -20,18 +20,29 @@ func SuddenDeath(myIp string) {
 		chord.ChordNode.Identifier = -1
 		fmt.Print("\nNode FAILED!!!\n")
 	} else {
+		// create waitGroup for user defined pause
+		c := make(chan os.Signal)
+		signal.Notify(c, os.Interrupt)
+		var wg sync.WaitGroup
+
 		SearchMyFiles()
+
+		// wait for exit
+		fmt.Println("\nWaiting to exit ...\nPress crtl+c to continue")
+		wg.Add(1)
+		go func() {
+			<-c
+			wg.Done()
+		}()
+		wg.Wait()
+
+		fmt.Println("\nTest completed.")
 	}
 }
 
 // Test2 add& search for files
 func Test4(t *testing.T) {
 	fmt.Println("Starting test 2 ...")
-
-	// create waitGroup for user defined pause
-	var wg sync.WaitGroup
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt)
 
 	// get machine data
 	myIp, myId := InitNode()
@@ -60,14 +71,4 @@ func Test4(t *testing.T) {
 	// test 2.2 search files
 	SuddenDeath(myIp)
 
-	// wait for exit
-	fmt.Println("\nWaiting to exit ...\nPress crtl+c to continue")
-	wg.Add(1)
-	go func() {
-		<-c
-		wg.Done()
-	}()
-	wg.Wait()
-
-	fmt.Println("\nTest completed.")
 }

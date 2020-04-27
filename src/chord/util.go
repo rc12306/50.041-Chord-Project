@@ -81,3 +81,7 @@ func (node *Node) PrintNode() {
 
 	fmt.Println(print)
 }
+
+func (node *Node) ReturnHash() map[int]string {
+	return node.hashTable
+}
