@@ -219,7 +219,8 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int, oldSuccessorN
 	node.dataStoreLock.RLock()
 	defer node.dataStoreLock.RUnlock()
 	firstLiveSuccessor := node.successorList[firstLiveSuccessorIndex]
-	if !firstLiveSuccessor.ping() {
+	newSuccessorList, err := firstLiveSuccessor.getSuccessorListRPC()
+	if err != nil {
 		firstLiveSuccessorIndex++
 		if firstLiveSuccessorIndex == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -227,9 +228,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int, oldSuccessorN
 			node.updateSuccessorList(firstLiveSuccessorIndex, oldSuccessorNodes)
 		}
 	} else {
-		newSuccessorList, _ := firstLiveSuccessor.getSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
-
 		copy(copyList[1:], newSuccessorList)
 		copyList[0] = firstLiveSuccessor
 		/*

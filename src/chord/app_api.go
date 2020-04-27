@@ -72,7 +72,12 @@ func (node *Node) AddFile(fileName string) {
 	if err == nil {
 		fmt.Println(fileName, "has been successfully put into Node", nodeStored.Identifier, "("+nodeStored.IP+")")
 		fmt.Println("Repliciating key across nodes for", fileName)
-		successorList, _ := nodeStored.getSuccessorListRPC()
+		successorList, err := nodeStored.getSuccessorListRPC()
+		if err != nil {
+			fmt.Println("Failed to replicate file among successors: Could not get successor list")
+			fmt.Println(err)
+			return
+		}
 		replicationNodes := pruneList(nodeStored.IP, successorList[:replicationFactor])
 		for index, successorNode := range replicationNodes {
 			replicationErr := successorNode.putRPC(keyIdentifier, fileName)
@@ -88,7 +93,6 @@ func (node *Node) AddFile(fileName string) {
 	}
 }
 
-// Delete file
 // DelFile allows user to delete file into the Chord ring
 func (node *Node) DelFile(fileName string) {
 	keyIdentifier := Hash(fileName)
@@ -98,7 +102,12 @@ func (node *Node) DelFile(fileName string) {
 	if err == nil {
 		fmt.Println(fileName, "has been successfully deleted from Node", nodeStored.Identifier, "("+nodeStored.IP+")")
 		fmt.Println("Deleting key across nodes for", fileName)
-		successorList, _ := nodeStored.getSuccessorListRPC()
+		successorList, err := nodeStored.getSuccessorListRPC()
+		if err != nil {
+			fmt.Println("Failed to delete replicated files among successors: Could not get successor list")
+			fmt.Println(err)
+			return
+		}
 		replicationNodes := pruneList(nodeStored.IP, successorList[:replicationFactor])
 		for index, successorNode := range replicationNodes {
 			replicationErr := successorNode.delRPC(keyIdentifier)
