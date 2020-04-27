@@ -66,9 +66,13 @@ func (l *Listener) Receive(payload *Packet, reply *Packet) error {
 	case "findSuccessor":
 		// fmt.Println("Receive query from " + payload.SenderIP)
 		// Call node to do the search
-		node := handleFindSuccessor(payload.MsgInt)
+		node, err := handleFindSuccessor(payload.MsgInt)
 		// Form the packet for reply
-		*reply = Packet{"answer", "", node.Identifier, []*RemoteNode{node}, ChordNode.IP}
+		if err == nil {
+			*reply = Packet{"answer", "", node.Identifier, []*RemoteNode{node}, ChordNode.IP}
+		} else {
+			*reply = Packet{"answer", "fail", node.Identifier, []*RemoteNode{}, ChordNode.IP}
+		}
 		return nil
 	case "getSuccessorList":
 		// Call node to return succesor list
@@ -210,13 +214,15 @@ func (remoteNode *RemoteNode) findSuccessorRPC(id int) (*RemoteNode, error) {
 		return nil, errors.New("Remote node closed connection abruptly: unable to complete RPC call")
 	}
 	client.Close()
+	if reply.Msg == "faile" {
+		return nil, errors.New("Unable to find successor through RPC call")
+	}
 	return reply.List[0], nil
 }
 
-func handleFindSuccessor(id int) *RemoteNode {
+func handleFindSuccessor(id int) (*RemoteNode, error) {
 	// search closest successor
-	closestPred := ChordNode.findSuccessor(id)
-	return closestPred
+	return ChordNode.findSuccessor(id)
 }
 
 /*
