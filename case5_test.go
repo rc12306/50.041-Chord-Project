@@ -54,7 +54,7 @@ func Test5(t *testing.T) {
 	// test 1 create/join ring function
 	InitRing(myIp, myId)
 
-	StaticDelay(5, "")
+	StaticDelay(20, "")
 
 	// Update new chord ring
 	fmt.Println("\nAll nodes completed test 1\nChecking chord ring details ...")
