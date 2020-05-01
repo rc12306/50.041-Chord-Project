@@ -58,7 +58,7 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 					replicatedKeys[key] = value
 				}
 			}
-			fmt.Println("Replicating", replicatedKeys, "to Node", successor.Identifier)
+			//fmt.Println("Replicating", replicatedKeys, "to Node", successor.Identifier)
 			for key, value := range replicatedKeys {
 				successor.putRPC(key, value)
 			}
@@ -81,9 +81,9 @@ func (node *Node) notify(remoteNode *RemoteNode) {
 			err = node.transferKeys(remoteNode, node.predecessor.Identifier, remoteNode.Identifier)
 		}
 		if err != nil {
-			fmt.Println("Failed to transfer keys:", err)
+			//fmt.Println("Failed to transfer keys:", err)
 		} else {
-			fmt.Println("Successfully transferred keys to predecssor Node", remoteNode.Identifier)
+			//fmt.Println("Successfully transferred keys to predecssor Node", remoteNode.Identifier)
 			node.predecessor = remoteNode
 		}
 	}
@@ -253,7 +253,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int, oldSuccessorN
 		// fmt.Println(newReplicationNodes, oldReplicationNodes)
 		for _, newNode := range newReplicationNodes {
 			if !containsNode(newNode, oldSuccessorNodes[:replicationFactor]) {
-				fmt.Println("Replicating", replicatedKeys, "to Node", newNode.Identifier)
+				//fmt.Println("Replicating", replicatedKeys, "to Node", newNode.Identifier)
 				for key, value := range replicatedKeys {
 					newNode.putRPC(key, value)
 				}

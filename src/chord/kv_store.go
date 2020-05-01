@@ -2,7 +2,6 @@ package chord
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 )
 
@@ -60,7 +59,7 @@ func (node *Node) transferKeys(targetNode *RemoteNode, start int, end int) error
 	keysToDelete := make([]int, 0)
 	for keyIdentifier, fileName := range node.hashTable {
 		if BetweenRightIncl(keyIdentifier, start, end) {
-			fmt.Println("Transferring key", keyIdentifier, "to Node", targetNode.Identifier)
+			//fmt.Println("Transferring key", keyIdentifier, "to Node", targetNode.Identifier)
 			// keyExists, err := targetNode.keyExistsRPC(keyIdentifier)
 			// if err != nil {
 			// return err
@@ -74,7 +73,7 @@ func (node *Node) transferKeys(targetNode *RemoteNode, start int, end int) error
 		}
 	}
 	for _, key := range keysToDelete {
-		fmt.Println("Deleting key", key)
+		//fmt.Println("Deleting key", key)
 		delete(node.hashTable, key)
 	}
 	return nil
