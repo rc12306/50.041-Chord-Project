@@ -48,6 +48,8 @@ func (node *Node) join(remoteNode *RemoteNode) error {
 		node.successorList[0] = successor
 		go func(sucessor *RemoteNode) {
 			time.Sleep(time.Second * 3)
+			node.dataStoreLock.RLock()
+			defer node.dataStoreLock.RUnlock()
 			// Wait to receive keys and send them to successor for replication
 			replicatedKeys := make(map[int]string)
 			for key, value := range node.hashTable {
@@ -138,7 +140,7 @@ func (node *Node) fixFingers() {
 		case <-ticker.C:
 			// updateFinger
 			nextNode := int(math.Pow(2, float64(next)))
-			closestSuccessor := node.findSuccessor((node.Identifier + nextNode) % ringSize)
+			closestSuccessor, _ := node.findSuccessor((node.Identifier + nextNode) % ringSize)
 			node.fingerTable[next] = closestSuccessor
 			next = (next + 1) % tableSize
 		case <-node.stop:
@@ -172,29 +174,23 @@ func (node *Node) checkPredecessor() {
 }
 
 // find successor of node/key with identifier id i.e. smallest node with identifier >= id
-func (node *Node) findSuccessor(id int) *RemoteNode {
+func (node *Node) findSuccessor(id int) (*RemoteNode, error) {
 	node.successorLock.RLock()
 	if BetweenRightIncl(id, node.Identifier, node.successorList[0].Identifier) {
 		node.successorLock.RUnlock()
-		return node.successorList[0]
+		return node.successorList[0], nil
 	}
 	node.successorLock.RUnlock()
 	// get closest preceding node to id in the finger table of this node
 	n := node.findClosestPredecessor(id)
 	if n.IP == node.IP {
-		return n
+		return n, nil
 	}
 	successor, err := n.findSuccessorRPC(id)
 	if err != nil {
-		// retry findsuccessor after ensuring ring has been stabilised
-		time.Sleep(time.Second)
-		successor, err := n.findSuccessorRPC(id)
-		if err != nil {
-			//log.Fatal("Node is unable to find successor for identifier", id)
-		}
-		return successor
+		return nil, err
 	}
-	return successor
+	return successor, nil
 
 }
 
@@ -217,7 +213,8 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int, oldSuccessorN
 	node.dataStoreLock.RLock()
 	defer node.dataStoreLock.RUnlock()
 	firstLiveSuccessor := node.successorList[firstLiveSuccessorIndex]
-	if !firstLiveSuccessor.ping() {
+	newSuccessorList, err := firstLiveSuccessor.getSuccessorListRPC()
+	if err != nil {
 		firstLiveSuccessorIndex++
 		if firstLiveSuccessorIndex == len(node.successorList) {
 			fmt.Println("All nodes have failed")
@@ -225,9 +222,7 @@ func (node *Node) updateSuccessorList(firstLiveSuccessorIndex int, oldSuccessorN
 			node.updateSuccessorList(firstLiveSuccessorIndex, oldSuccessorNodes)
 		}
 	} else {
-		newSuccessorList, _ := firstLiveSuccessor.getSuccessorListRPC()
 		copyList := make([]*RemoteNode, tableSize)
-
 		copy(copyList[1:], newSuccessorList)
 		copyList[0] = firstLiveSuccessor
 		/*

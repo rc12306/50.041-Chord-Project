@@ -9,6 +9,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"sort"
 )
 
 func ranDelay() {
@@ -18,12 +19,7 @@ func ranDelay() {
 	time.Sleep(ranVal)
 }
 
-func Test3(t *testing.T) {
-	var wg sync.WaitGroup
-	wg.Add(1)
-	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt)
-
+func initRing() ([]string, string, int) {
 	fmt.Println("Starting test ...")
 
 	// init User IP info
@@ -42,7 +38,6 @@ func Test3(t *testing.T) {
 	tDelay := time.Duration(myId*100) * time.Millisecond
 	fmt.Println("\nWait for ", tDelay)
 	time.Sleep(tDelay)
-	fmt.Println("Node", myId, "has finished sleeping!")
 
 	fmt.Println("\nLooking for IPs in ring...")
 	nodesInRing, _ := chord.CheckRing()
@@ -78,39 +73,93 @@ func Test3(t *testing.T) {
 
 		fmt.Println("\nJoining existing ring at ", Ip)
 		chord.ChordNode.CreateNodeAndJoin(remoteNode)
-		fmt.Println("Node ", myId, " successfully joined node!")
+		fmt.Println("Node ", myId, " successfully joined ring!")
 	}
 
 	// Update new chord ring
 	ipRing, ipNot := chord.CheckRing()
-	fmt.Println("\nin RING: ", ipRing)
-	fmt.Println("Outside: ", ipNot)
+	fmt.Println("\nIn Ring: ", ipRing)
+	fmt.Println("Outside Ring: ", ipNot)
 
-	// Wait till all nodes have joint the chord ring
-	eDelay := time.Duration(10) * time.Second
-	fmt.Println("\nWait for ", eDelay)
-	time.Sleep(eDelay)
-	fmt.Println("Node", myId, "has finished sleeping!\nTest: add & search files")
+	return ipRing, myIp, myId
+}
 
+func addFiles(allIpLen int, lastIp string, myIp string) bool {
 	// Add files into the chord ring
-	fileSlice := [5]string{"apple", "pear", "cat", "puppy", "shield"}
-	fmt.Println("\nTesting ... \nAdding files into Chord Ring ...")
-	for _, file := range fileSlice {
-		fmt.Println("Adding: ", file)
-		chord.ChordNode.AddFile(file)
+	fileSlice := [5]string{"a", "b", "c", "d", "e"}
+	if (lastIp == myIp) {
+		fmt.Println("\nAdding files into Node ", myIp)
+		for _, file := range fileSlice {
+			chord.ChordNode.AddFile(file)
+		}
+	} else {
+		time.Sleep(time.Duration(allIpLen * 5)*time.Second)
 	}
-	// fmt.Println("Node ", myId, "successfully added files ", fileSlice, " into chord ring!!!")
+	return true
+}
 
+func searchFiles() bool {
 	// Search for files
-	searchSlice := [8]string{"apple", "irritating", "cat", "nothing", "shield", "hydra", "puppy", "pear"}
+	searchSlice := [5]string{"a", "b", "c", "d", "e"}
 	fmt.Println("\nTesting ... \nSearching for files in the ring ...")
 	for _, search := range searchSlice {
-		// generates random delays b/w search
-		ranDelay()
 		fmt.Println("\nSearching for ", search)
 		chord.ChordNode.FindFile(search)
 	}
-	fmt.Println("\nSearch test successful! \nPress Ctrl+C to end")
+	fmt.Println("\nInitial search completed.")
+	return true
+}
+
+func Test3(t *testing.T) {
+	rand.Seed(time.Now().Unix())
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+
+	// Create ring
+	ipRing, myIp, myId := initRing()
+
+	// Add files to one node in chord ring (e.g. node with biggest identifier)
+	allIp := append(ipRing, myIp)
+	sort.Strings(allIp)
+
+	DELAY_CONST := len(allIp) * 5
+	time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+
+	addDone := addFiles(len(allIp), allIp[len(allIp)-1], myIp)
+
+	searchDone := false
+	if addDone {
+		searchDone = searchFiles()
+	}
+
+	if searchDone {
+		hashTable := chord.ChordNode.ReturnHash()
+		// Remove node storing the file
+		if (len(hashTable) != 0) {
+			fmt.Println("Node will leave network.")
+			chord.ChordNode.ShutDown()
+			chord.ChordNode = &chord.Node{}
+			chord.ChordNode.Identifier = -1
+			fmt.Print("Left chord network (" + myIp + ") as " + fmt.Sprint(myId) + ".\n")
+		} else { // else, search again
+			time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+			_, othersIp := chord.NetworkIP()
+			fmt.Println("IPs in network: ", othersIp)
+			if (len(othersIp) == len(allIp)) {
+				fmt.Println("One node has left the network!")
+				time.Sleep(time.Duration(DELAY_CONST)*time.Second)
+				searchSlice2 := [5]string{"a", "b", "c", "d", "e"}
+				fmt.Println("\nRestart search...")
+				for _, search := range searchSlice2 {
+					fmt.Println("\nSearching for ", search)
+					chord.ChordNode.FindFile(search)
+				}
+			}
+		}
+	}
 
 	go func() {
 		<-c

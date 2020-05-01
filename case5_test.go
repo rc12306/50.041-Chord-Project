@@ -10,10 +10,12 @@ import (
 )
 
 // abrupt shutdown
-func SuddenDeath(myIp string) {
-	deathIp := IpSelect(myIp, "3")
+func MultipleDeath(myIp string) {
+	deathIp1 := IpSelect(myIp, "3")
+	deathIp2 := IpSelect(myIp, "4")
+	deathIp3 := IpSelect(myIp, "5")
 
-	if myIp == deathIp {
+	if myIp == deathIp1 || myIp == deathIp2 || myIp == deathIp3 {
 		randomDelay(0, 50)
 		//chord.ChordNode.ShutDown()
 		chord.ChordNode = &chord.Node{}
@@ -41,7 +43,7 @@ func SuddenDeath(myIp string) {
 }
 
 // Test2 add& search for files
-func Test4(t *testing.T) {
+func Test5(t *testing.T) {
 	fmt.Println("Starting test 2 ...")
 
 	// get machine data
@@ -52,7 +54,7 @@ func Test4(t *testing.T) {
 	// test 1 create/join ring function
 	InitRing(myIp, myId)
 
-	StaticDelay(5, "")
+	StaticDelay(20, "")
 
 	// Update new chord ring
 	fmt.Println("\nAll nodes completed test 1\nChecking chord ring details ...")
@@ -69,6 +71,6 @@ func Test4(t *testing.T) {
 	StaticDelay(5, "")
 
 	// test 2.2 search files
-	SuddenDeath(myIp)
+	MultipleDeath(myIp)
 
 }

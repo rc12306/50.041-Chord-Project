@@ -62,7 +62,7 @@ func main() {
 	fmt.Println(
 		`
 		Welcome to CHORD!
-		
+
 		Scan    s   		: Scan network for available nodes.
 		Init    i   		: Create and Join.
 		Print   p      		: Print node info.
@@ -299,7 +299,7 @@ func initialise(IP string, ID int) error {
 	err := chord.ChordNode.CreateNodeAndJoin(remoteNode)
 
 	if err != nil {
-		fmt.Println("Unable to join rmeote node (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
+		fmt.Println("Unable to join remote node (" + remoteNode_IP + ") " + fmt.Sprint(remoteNode_ID) + ".")
 		return err
 	}
 
